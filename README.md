@@ -7,13 +7,10 @@ template that can be used as the basis for creating new workflows.
 
 ## Introduction
 
-This section of documentation typically contains an overview of the workflow in terms of motivation
-and bioinformatics methods, listing any key tools or algorithms employed, whilst also describing its
-range of use-cases and what a suitable input dataset should look like.
-
+This workflow provides a simple way to analyse Monkeypox sequencing data; taking raw Oxford Nanopore Technologies reads and creating a draft consensus and assembly. No trimming of sequences is carried out so be vigilant when using targeted data.
 ## Quickstart
 
-The workflow uses [nextflow](https://www.nextflow.io/) to manage compute and 
+The workflow uses [nextflow](https://www.nextflow.io/) to manage compute and
 software resources, as such nextflow will need to be installed before attempting
 to run the workflow.
 
@@ -31,7 +28,7 @@ For more information on running EPI2ME Labs workflows [visit out website](https:
 To obtain the workflow, having installed `nextflow`, users can run:
 
 ```
-nextflow run epi2me-labs/wf-template --help
+nextflow run epi2me-labs/wf-mpx --help
 ```
 
 to see the options for the workflow.
@@ -42,7 +39,8 @@ The primary outputs of the workflow include:
 
 * a simple text file providing a summary of sequencing reads,
 * an HTML report document detailing the primary findings of the workflow.
-
+* a draft consensus sequence obtained
+* a medaka polished assembly
 ## Useful links
 
 * [nextflow](https://www.nextflow.io/)

@@ -142,7 +142,7 @@
         }
     },
     "docs": {
-        "intro": "## Introduction\n\nThis section of documentation typically contains an overview of the workflow in terms of motivation\nand bioinformatics methods, listing any key tools or algorithms employed, whilst also describing its\nrange of use-cases and what a suitable input dataset should look like.\n\n",
+        "intro": "## Introduction\n\nThis workflow provides a simple way to analyse Monkeypox sequencing data; taking raw Oxford Nanopore Technologies reads and creating a draft consensus and assembly. No trimming of sequences is carried out so be vigilant when using targeted data.\n",
         "links": "## Useful links\n\n* [nextflow](https://www.nextflow.io/)\n* [docker](https://www.docker.com/products/docker-desktop)\n* [conda](https://docs.conda.io/en/latest/miniconda.html)\n"
     }
 }
