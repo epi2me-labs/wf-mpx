@@ -110,17 +110,18 @@ process flyeAssembly {
     label "wfmpx"
     cpus params.threads
     input:
-        tuple val(sample_id), val(type), path(sample_fastq), path(sample_stats)
+        tuple val(sample_id), val(type), path("${sample_id}.bam"), path("${sample_id}.bam.bai")
         path reference
     output:
         tuple val(sample_id), val(type), path("medaka/consensus.fasta"), path("${sample_id}_assembly_mapped.bam"), path("${sample_id}_assembly.bed")
     script:
     """
-    flye --nano-raw ${sample_fastq}  -g 197k -t ${params.threads} --meta -o flye
+    samtools bam2fq ${sample_id}.bam > ${sample_id}_restricted.fastq
+    flye --nano-raw ${sample_id}_restricted.fastq  -g 197k -t ${params.threads} --meta -o flye
 
     # polish assembly with medaka
 
-    medaka_consensus -i ${sample_fastq} -t ${params.threads} -d flye/assembly.fasta ${params.medaka_options}
+    medaka_consensus -i ${sample_id}_restricted.fastq -t ${params.threads} -d flye/assembly.fasta ${params.medaka_options}
 
     minimap2 -ax map-ont ${reference} medaka/consensus.fasta | samtools view -bh - | samtools sort - > ${sample_id}_assembly_mapped.bam
 
@@ -221,7 +222,7 @@ workflow pipeline {
         workflow_params = getParams()
 
         if (params.assembly == true) {
-          assembly = flyeAssembly(summary.sample, reference)
+          assembly = flyeAssembly(alignment.alignment, reference)
         }
 
 
