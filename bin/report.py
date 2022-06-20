@@ -99,19 +99,21 @@ def make_coverage_section(coverage_file, variants_data, report_doc):
             line_color=ont_colors.BRAND_BLUE)
 
     # add a point for the snps
-    p.circle(
-        variants_data[~variants_data.is_indel]['start'],
-        y=5,
-        size=5,
-        color=ont_colors.BRAND_GREY)
+    if not variants_data.empty:
+        p.circle(
+            variants_data[~variants_data.is_indel]['start'],
+            y=5,
+            size=5,
+            color=ont_colors.BRAND_GREY)
 
     # add a bar for the indels
-    p.hbar(
-        left=variants_data[variants_data.is_indel]['start'],
-        y=6,
-        right=variants_data[variants_data.is_indel]['end'],
-        height=max_coverage/10,
-        color=ont_colors.BRAND_LIGHT_BLUE)
+    if not variants_data.empty:
+        p.hbar(
+            left=variants_data[variants_data.is_indel]['start'],
+            y=6,
+            right=variants_data[variants_data.is_indel]['end'],
+            height=max_coverage/10,
+            color=ont_colors.BRAND_LIGHT_BLUE)
 
     p.xaxis.formatter = BasicTickFormatter(use_scientific=False)
 
