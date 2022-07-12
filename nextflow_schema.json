@@ -1,9 +1,9 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema",
     "$id": "https://raw.githubusercontent.com/./master/nextflow_schema.json",
-    "title": "epi2me-labs/wf-template",
-    "description": "Nextflow workflow template repository.",
-    "url": "https://github.com/epi2me-labs/wf-template",
+    "title": "epi2me-labs/wf-mpx",
+    "description": "A basic workflow for Monkeypox analysis.",
+    "url": "https://github.com/epi2me-labs/wf-mpx",
     "type": "object",
     "definitions": {
         "basic_input_output_options": {
@@ -15,7 +15,7 @@
                 "out_dir": {
                     "type": "string",
                     "default": "output",
-                    "format": "path",
+                    "format": "directory-path",
                     "description": "Directory for output of all user-facing files."
                 },
                 "fastq": {
@@ -41,6 +41,11 @@
                 "medaka_options": {
                     "type": "string",
                     "description": "Pass through options to medaka."
+                },
+                "min_coverage": {
+                    "type": "number",
+                    "description": "Coverage threshold for masking in consensus step.",
+                    "default": 20
                 },
                 "reference": {
                     "type": "string",
@@ -129,7 +134,7 @@
         },
         "wfversion": {
             "type": "string",
-            "default": "v0.0.3",
+            "default": "v0.0.4",
             "hidden": true
         },
         "monochrome_logs": {
