@@ -81,7 +81,7 @@ process medakaVariants {
     medaka variant --gvcf ${reference} ${sample_id}.hdf ${sample_id}.vcf --verbose
     medaka tools annotate --debug --pad 25 ${sample_id}.vcf ${reference} ${sample_id}.bam ${sample_id}.annotate.vcf
 
-    bcftools filter -e "ALT='.'" ${sample_id}.annotate.vcf | bcftools filter -o ${sample_id}.annotate.filtered.vcf -O v -e "INFO/DP<20" -
+    bcftools filter -e "ALT='.'" ${sample_id}.annotate.vcf | bcftools filter -o ${sample_id}.annotate.filtered.vcf -O v -e "INFO/DP<${params.min_coverage}" -
 
     vcf-annotator ${sample_id}.annotate.filtered.vcf ${genbank} > ${sample_id}.vcf-annotator.vcf
     """
@@ -99,7 +99,7 @@ process makeConsensus {
         tuple val(sample_id), val(type), path("${sample_id}.draft.consensus.fasta")
     """
     reference_name=`basename ${reference} .fasta`
-    awk -v ref=\${reference_name} '{if (\$2<20) print ref"\t"\$1+1}' ${depth}  > mask.regions
+    awk -v ref=\${reference_name} '{if (\$2<${params.min_coverage}) print ref"\t"\$1+1}' ${depth}  > mask.regions
     bgzip ${sample_id}.annotate.filtered.vcf
     tabix ${sample_id}.annotate.filtered.vcf.gz
     bcftools consensus --mask mask.regions  --mark-del '-' --mark-ins lc --fasta-ref ${reference} -o ${sample_id}.draft.consensus.fasta ${sample_id}.annotate.filtered.vcf.gz
