@@ -21,13 +21,13 @@ process summariseReads {
     label "wfmpx"
     cpus 1
     input:
-        tuple path(directory), val(sample_id), val(type)
+        tuple path(directory), val(meta)
     output:
-        tuple val(sample_id), val(type), path("${sample_id}.fastq.gz"), path("${sample_id}.stats"), emit: sample
+        tuple val(meta.sample_id), val(meta.type), path("${meta.sample_id}.fastq.gz"), path("${meta.sample_id}.stats"), emit: sample
     shell:
     """
-    fastcat -s ${sample_id} -r ${sample_id}.stats -x ${directory} > ${sample_id}.fastq
-    gzip ${sample_id}.fastq
+    fastcat -s ${meta.sample_id} -r ${meta.sample_id}.stats -x ${directory} > ${meta.sample_id}.fastq
+    gzip ${meta.sample_id}.fastq
     """
 }
 
