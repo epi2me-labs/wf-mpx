@@ -137,6 +137,14 @@
             "default": "v0.0.4",
             "hidden": true
         },
+        "_reference": {
+            "type": "string",
+            "hidden": true
+        },
+        "_genbank": {
+            "type": "string",
+            "hidden": true
+        },
         "monochrome_logs": {
             "type": "boolean"
         },
