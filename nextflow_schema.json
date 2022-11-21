@@ -130,7 +130,7 @@
         },
         "wfversion": {
             "type": "string",
-            "default": "v0.0.4",
+            "default": "v0.0.5",
             "hidden": true
         },
         "_reference": {
@@ -154,6 +154,6 @@
     },
     "docs": {
         "intro": "## Introduction\n\nThis workflow provides a simple way to analyse Monkeypox sequencing data; taking\nraw Oxford Nanopore Technologies reads and creating a draft consensus and assembly.\n\n> No trimming of sequences is carried out so be vigilant when using targeted data.\n\nUsing community develped tools this workflow:\n* Maps reads to a reference genome (`minimap2`)\n* Assesses coverage\n* Discards reads not mapping to the chosen reference\n* Calls variants with resepect to reference (`medaka`)\n* Filters variants with <20x coverage\n* Creates a draft consensus (`bcftools`)\n* Creats a de-novo assembly (`flye` & `medaka`)\n\nMore information can be found in this [blog post](https://labs.epi2me.io/basic-monkeypox-workflow).\n",
-        "links": "## Useful links\n\n* [nextflow](https://www.nextflow.io/)\n* [docker](https://www.docker.com/products/docker-desktop)\n* [conda](https://docs.conda.io/en/latest/miniconda.html)\n"
+        "links": "## Useful links\n\n* [nextflow](https://www.nextflow.io/)\n* [docker](https://www.docker.com/products/docker-desktop)\n* [singularity](https://docs.sylabs.io/guides/3.0/user-guide/index.html)\n"
     }
 }
