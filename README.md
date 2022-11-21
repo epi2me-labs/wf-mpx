@@ -1,13 +1,25 @@
-# Workflow template
+# wf-mpx | Monkeypox Virus Metagenomic Assembly
 
-This repository contains a [nextflow](https://www.nextflow.io/) workflow
-template that can be used as the basis for creating new workflows.
-
-> This workflow is not intended to be used by end users.
-
+This repository contains a [nextflow](https://www.nextflow.io/) workflow for the
+assembly of reads originating from the Monkeypox virus obtained through
+Oxford Nanopore metagenomic sequencing.
 ## Introduction
 
-This workflow provides a simple way to analyse Monkeypox sequencing data; taking raw Oxford Nanopore Technologies reads and creating a draft consensus and assembly. No trimming of sequences is carried out so be vigilant when using targeted data.
+This workflow provides a simple way to analyse Monkeypox sequencing data; taking
+raw Oxford Nanopore Technologies reads and creating a draft consensus and assembly.
+
+> No trimming of sequences is carried out so be vigilant when using targeted data.
+
+Using community develped tools this workflow:
+* Maps reads to a reference genome (`minimap2`)
+* Assesses coverage
+* Discards reads not mapping to the chosen reference
+* Calls variants with resepect to reference (`medaka`)
+* Filters variants with <20x coverage
+* Creates a draft consensus (`bcftools`)
+* Creats a de-novo assembly (`flye` & `medaka`)
+
+More information can be found in this [blog post](https://labs.epi2me.io/basic-monkeypox-workflow).
 ## Quickstart
 
 The workflow uses [nextflow](https://www.nextflow.io/) to manage compute and
@@ -32,6 +44,15 @@ nextflow run epi2me-labs/wf-mpx --help
 ```
 
 to see the options for the workflow.
+
+**Workflow example**
+
+To run the workflow with test data
+
+```
+git clone https://github.com/epi2me-labs/wf-mpx
+nextflow run epi2me-labs/wf-mpx --fastq wf-mpx/test_data/fastq/barcode01
+```
 
 **Workflow outputs**
 

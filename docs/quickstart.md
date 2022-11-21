@@ -23,6 +23,15 @@ nextflow run epi2me-labs/wf-mpx --help
 
 to see the options for the workflow.
 
+**Workflow example**
+
+To run the workflow with test data
+
+```
+git clone https://github.com/epi2me-labs/wf-mpx
+nextflow run epi2me-labs/wf-mpx --fastq wf-mpx/test_data/fastq/barcode01
+```
+
 **Workflow outputs**
 
 The primary outputs of the workflow include:

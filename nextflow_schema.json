@@ -35,7 +35,7 @@
                 },
                 "assembly": {
                     "type": "boolean",
-                    "description": "Perform assembly with flye.",
+                    "description": "Switch to perform assembly with flye.",
                     "default": true
                 },
                 "medaka_options": {
@@ -44,7 +44,7 @@
                 },
                 "min_coverage": {
                     "type": "number",
-                    "description": "Coverage threshold for masking in consensus step.",
+                    "description": "Coverage threshold for masking in the consensus step.",
                     "default": 20
                 },
                 "reference": {
@@ -55,17 +55,13 @@
                         "MT903344.1",
                         "ON568298.1",
                         "ON563414.1"
-                    ]
+                    ],
+                    "default": "MT903344.1"
                 },
                 "threads": {
                     "type": "number",
                     "description": "Number of threads to use.",
                     "default": 4
-                },
-                "sanitize_fastq": {
-                    "type": "boolean",
-                    "description": "Use additional heuristics to identify barcodes from file paths.",
-                    "help_text": "Enabling this option will group together files into samples by the presence of strings of the form `barcodeXXX` present in filenames, rather than simply files grouped into directories (as output by MinKNOW and the Guppy basecaller)."
                 }
             },
             "required": [
@@ -157,7 +153,7 @@
         }
     },
     "docs": {
-        "intro": "## Introduction\n\nThis workflow provides a simple way to analyse Monkeypox sequencing data; taking raw Oxford Nanopore Technologies reads and creating a draft consensus and assembly. No trimming of sequences is carried out so be vigilant when using targeted data.\n",
+        "intro": "## Introduction\n\nThis workflow provides a simple way to analyse Monkeypox sequencing data; taking\nraw Oxford Nanopore Technologies reads and creating a draft consensus and assembly.\n\n> No trimming of sequences is carried out so be vigilant when using targeted data.\n\nUsing community develped tools this workflow:\n* Maps reads to a reference genome (`minimap2`)\n* Assesses coverage\n* Discards reads not mapping to the chosen reference\n* Calls variants with resepect to reference (`medaka`)\n* Filters variants with <20x coverage\n* Creates a draft consensus (`bcftools`)\n* Creats a de-novo assembly (`flye` & `medaka`)\n\nMore information can be found in this [blog post](https://labs.epi2me.io/basic-monkeypox-workflow).\n",
         "links": "## Useful links\n\n* [nextflow](https://www.nextflow.io/)\n* [docker](https://www.docker.com/products/docker-desktop)\n* [conda](https://docs.conda.io/en/latest/miniconda.html)\n"
     }
 }
