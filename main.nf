@@ -14,7 +14,6 @@ import groovy.json.JsonBuilder
 nextflow.enable.dsl = 2
 
 include { fastq_ingress } from './lib/fastqingress'
-include { start_ping; end_ping } from './lib/ping'
 
 
 process summariseReads {
@@ -255,28 +254,38 @@ workflow pipeline {
 // entrypoint workflow
 WorkflowMain.initialise(workflow, params, log)
 workflow {
-    start_ping()
+    if (params.disable_ping == false) {
+        Pinguscript.ping_post(workflow, "start", "none", params.out_dir, params)
+    }
 
     if (params.reference == null){
-      params.remove('reference')
-      params._reference = projectDir.resolve("./data/references/MT903344.1.fasta").toString()
-      params._genbank = projectDir.resolve("./data/references/MT903344.1.gb").toString()
+        params.remove('reference')
+        params._reference = projectDir.resolve("./data/references/MT903344.1.fasta").toString()
+        params._genbank = projectDir.resolve("./data/references/MT903344.1.gb").toString()
     } else {
-      path = projectDir.resolve("./data/references/"+params.reference+".fasta").toString()
-      params._reference = file(path, type: "file", checkIfExists:true).toString()
-      path_genbank = projectDir.resolve("./data/references/"+params.reference+".gb").toString()
-      params._genbank = file(path_genbank, type: "file", checkIfExists:true).toString()
-      params.remove('reference')
+        path = projectDir.resolve("./data/references/"+params.reference+".fasta").toString()
+        params._reference = file(path, type: "file", checkIfExists:true).toString()
+        path_genbank = projectDir.resolve("./data/references/"+params.reference+".gb").toString()
+        params._genbank = file(path_genbank, type: "file", checkIfExists:true).toString()
+        params.remove('reference')
     }
 
     samples = fastq_ingress([
-        "input":params.fastq,
-        "sample":params.sample,
-        "sample_sheet":params.sample_sheet,
-        "sanitize": params.sanitize_fastq,
-        "output":params.out_dir])
+       "input":params.fastq,
+       "sample":params.sample,
+       "sample_sheet":params.sample_sheet])
 
     pipeline(samples, params._reference, params._genbank)
     output(pipeline.out.results)
-    end_ping(pipeline.out.telemetry)
+
+}
+
+if (params.disable_ping == false) {
+    workflow.onComplete {
+        Pinguscript.ping_post(workflow, "end", "none", params.out_dir, params)
+    }
+
+    workflow.onError {
+        Pinguscript.ping_post(workflow, "error", "$workflow.errorMessage", params.out_dir, params)
+    }
 }

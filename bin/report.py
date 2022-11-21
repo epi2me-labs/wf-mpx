@@ -61,7 +61,6 @@ def load_vcf(vcf_file):
 
             for info_field in info_fields:
                 field_data = record.INFO[info_field]
-                print(type(field_data))
                 if isinstance(field_data, list):
                     field_data = ",".join(str(x) for x in field_data)
                 data[info_field].append(field_data)
@@ -74,7 +73,6 @@ def load_vcf(vcf_file):
 
 def make_coverage_section(coverage_file, variants_data, report_doc):
     """Make the coverage section."""
-    print(variants_data)
     coverage = pd.read_csv(coverage_file, sep="\t", header=0)
 
     section = report_doc.add_section()
@@ -191,8 +189,6 @@ def make_assembly_summary(bed, report):
             ['referece', 'start', 'end', 'name', 'qual', 'strand'],
             axis=1,
             inplace=False)
-
-    print(contigs)
 
     p = figure(
             x_axis_label='position',
