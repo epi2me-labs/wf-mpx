@@ -1,25 +1,27 @@
-# wf-mpx | Monkeypox Virus Metagenomic Assembly
+# wf-mpx | Mpox Virus Metagenomic Assembly
 
 This repository contains a [nextflow](https://www.nextflow.io/) workflow for the
-assembly of reads originating from the Monkeypox virus obtained through
+assembly of reads originating from the mpox virus obtained through
 Oxford Nanopore metagenomic sequencing.
 ## Introduction
 
-This workflow provides a simple way to analyse Monkeypox sequencing data; taking
+This workflow provides a simple way to analyse mpox sequencing data; taking
 raw Oxford Nanopore Technologies reads and creating a draft consensus and assembly.
+
+We expect data to be generated from a mixed population sample hence the use of the term "metagenomics".
 
 > No trimming of sequences is carried out so be vigilant when using targeted data.
 
-Using community develped tools this workflow:
+Using community-develped tools, this workflow:
 * Maps reads to a reference genome (`minimap2`)
 * Assesses coverage
 * Discards reads not mapping to the chosen reference
-* Calls variants with resepect to reference (`medaka`)
+* Calls variants with resepect to the reference (`medaka`)
 * Filters variants with <20x coverage
 * Creates a draft consensus (`bcftools`)
 * Creats a de-novo assembly (`flye` & `medaka`)
 
-More information can be found in this [blog post](https://labs.epi2me.io/basic-monkeypox-workflow).
+More information can be found in this [blog post](https://labs.epi2me.io/basic-mpox-workflow).
 ## Quickstart
 
 The workflow uses [nextflow](https://www.nextflow.io/) to manage compute and
