@@ -32,7 +32,7 @@ process summariseReads {
 
 process alignReads {
     label "wfmpx"
-    cpus params.threads
+    cpus params.align_threads
     input:
         tuple val(sample_id), val(type), path(sample_fastq), path(sample_stats)
         path reference
@@ -40,8 +40,8 @@ process alignReads {
         tuple val(sample_id), val(type), path("${sample_id}.bam"), path("${sample_id}.bam.bai"), emit: alignment
         tuple path("${sample_id}.bamstats"), path("${sample_id}.bam.summary"), emit: bamstats
     """
-    mini_align -i ${sample_fastq} -r ${reference} -p ${sample_id} -t $task.cpus -m
-    stats_from_bam -o ${sample_id}.bamstats -s ${sample_id}.bam.summary -t $task.cpus ${sample_id}.bam
+    mini_align -i ${sample_fastq} -r ${reference} -p ${sample_id} -t ${params.align_threads} -m
+    stats_from_bam -o ${sample_id}.bamstats -s ${sample_id}.bam.summary -t ${params.align_threads} ${sample_id}.bam
 
     #Keep only mapped reads going forward
     #samtools view -b -F 4 ${sample_id}_all.bam > ${sample_id}.bam
@@ -49,16 +49,14 @@ process alignReads {
 }
 
 process coverageCalc {
-    depth_threads = {params.threads >= 4  ? 4 : params.threads}
     label "wfmpx"
-    cpus depth_threads
+    cpus 1
     input:
         tuple val(sample_id), val(type), path("${sample_id}.bam"), path("${sample_id}.bam.bai")
         path reference
     output:
-        tuple path("${sample_id}.depth.txt")
+        path "${sample_id}.depth.txt"
     """
-    #mosdepth --fast-mode --by 10 -t $task.cpus ${sample_id} ${sample_id}.bam
     coverage_from_bam -s 1 -p ${sample_id} ${sample_id}.bam
     mv ${sample_id}*.depth.txt ${sample_id}.depth.txt
     """
@@ -68,7 +66,7 @@ process coverageCalc {
 
 process medakaVariants {
     label "wfmpx"
-    cpus params.threads
+    cpus 2
     input:
         tuple val(sample_id), val(type), path("${sample_id}.bam"), path("${sample_id}.bam.bai")
         path reference
@@ -89,7 +87,7 @@ process medakaVariants {
 
 process makeConsensus {
     label "wfmpx"
-    cpus params.threads
+    cpus 1
     input:
         tuple val(sample_id), val(type), path("${sample_id}.annotate.filtered.vcf")
         path reference
@@ -107,7 +105,7 @@ process makeConsensus {
 
 process flyeAssembly {
     label "wfmpx"
-    cpus params.threads
+    cpus params.assembly_threads
     input:
         tuple val(sample_id), val(type), path("${sample_id}.bam"), path("${sample_id}.bam.bai")
         path reference
@@ -116,11 +114,11 @@ process flyeAssembly {
     script:
     """
     samtools bam2fq ${sample_id}.bam > ${sample_id}_restricted.fastq
-    flye --nano-raw ${sample_id}_restricted.fastq  -g 197k -t ${params.threads} --meta -o flye
+    flye --nano-raw ${sample_id}_restricted.fastq  -g 197k -t ${params.assembly_threads} --meta -o flye
 
     # polish assembly with medaka
 
-    medaka_consensus -i ${sample_id}_restricted.fastq -t ${params.threads} -d flye/assembly.fasta ${params.medaka_options}
+    medaka_consensus -i ${sample_id}_restricted.fastq -t ${params.assembly_threads} -d flye/assembly.fasta ${params.medaka_options}
 
     minimap2 -ax map-ont ${reference} medaka/consensus.fasta | samtools view -bh - | samtools sort - > ${sample_id}_assembly_mapped.bam
 
@@ -173,7 +171,7 @@ process makeReport {
     output:
         path "wf-mpx-*.html"
     script:
-        report_name = "wf-mpx-" + params.report_name + '.html'
+        report_name = "wf-mpx-report.html"
     """
 
     report.py $report_name \
@@ -273,7 +271,7 @@ workflow {
     samples = fastq_ingress([
        "input":params.fastq,
        "sample":params.sample,
-       "sample_sheet":params.sample_sheet])
+       "sample_sheet":null])
 
     pipeline(samples, params._reference, params._genbank)
     output(pipeline.out.results)
