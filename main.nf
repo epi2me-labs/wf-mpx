@@ -15,21 +15,6 @@ nextflow.enable.dsl = 2
 
 include { fastq_ingress } from './lib/fastqingress'
 
-
-process summariseReads {
-    label "wfmpx"
-    cpus 1
-    input:
-        tuple path(directory), val(meta)
-    output:
-        tuple val(meta.sample_id), val(meta.type), path("${meta.sample_id}.fastq.gz"), path("${meta.sample_id}.stats"), emit: sample
-    shell:
-    """
-    fastcat -s ${meta.sample_id} -r ${meta.sample_id}.stats -x ${directory} > ${meta.sample_id}.fastq
-    gzip ${meta.sample_id}.fastq
-    """
-}
-
 process alignReads {
     label "wfmpx"
     cpus params.align_threads
@@ -174,7 +159,7 @@ process makeReport {
         report_name = "wf-mpx-report.html"
     """
 
-    report.py $report_name \
+    workflow-glue report $report_name \
         --versions versions \
         seqs.txt \
         --params params.json \
@@ -210,8 +195,8 @@ workflow pipeline {
         reference
         genbank
     main:
-        summary = summariseReads(reads)
-        alignment = alignReads(summary.sample, reference)
+        samples_for_processing = reads.map {it -> [it[0].alias, it[0].type, it[1], it[2]]}
+        alignment = alignReads(samples_for_processing, reference)
         coverage = coverageCalc(alignment.alignment, reference)
         variants = medakaVariants(alignment.alignment, reference, genbank)
         draft = makeConsensus(variants, reference, coverage)
@@ -224,7 +209,7 @@ workflow pipeline {
 
 
         report = makeReport(
-            summary.map{it[3]}.collect(),
+            reads | map { it[2].resolve("per-read-stats.tsv") } | collectFile(keepHeader: true),
             software_versions.collect(),
             workflow_params,
             variants.map{it[2]}.collect(),
@@ -234,7 +219,7 @@ workflow pipeline {
         )
     emit:
         results = report.concat(
-            summary.map{it[3]}.collect(),
+            reads | map { it[2].resolve("per-read-stats.tsv") } | collectFile(keepHeader: true),
             alignment.alignment.map{it[2]}.collect(),
             alignment.alignment.map{it[3]}.collect(),
             variants.map{it[2]}.collect(),
@@ -271,7 +256,8 @@ workflow {
     samples = fastq_ingress([
        "input":params.fastq,
        "sample":params.sample,
-       "sample_sheet":null])
+       "sample_sheet":null,
+       "fastcat_stats":true ])
 
     pipeline(samples, params._reference, params._genbank)
     output(pipeline.out.results)
