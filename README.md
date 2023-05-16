@@ -3,6 +3,10 @@
 This repository contains a [nextflow](https://www.nextflow.io/) workflow for the
 assembly of reads originating from the mpox virus obtained through
 Oxford Nanopore metagenomic sequencing.
+
+
+
+
 ## Introduction
 
 This workflow provides a simple way to analyse mpox sequencing data; taking
@@ -22,6 +26,10 @@ Using community-develped tools, this workflow:
 * Creats a de-novo assembly (`flye` & `medaka`)
 
 More information can be found in this [blog post](https://labs.epi2me.io/basic-mpox-workflow).
+
+
+
+
 ## Quickstart
 
 The workflow uses [nextflow](https://www.nextflow.io/) to manage compute and
@@ -64,6 +72,10 @@ The primary outputs of the workflow include:
 * an HTML report document detailing the primary findings of the workflow.
 * a draft consensus sequence obtained
 * a medaka polished assembly
+
+
+
+
 ## Useful links
 
 * [nextflow](https://www.nextflow.io/)

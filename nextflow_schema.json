@@ -4,6 +4,7 @@
     "title": "epi2me-labs/wf-mpx",
     "description": "Mpox metagenomics assembly.",
     "demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-mpx/wf-mpx-demo.tar.gz",
+    "aws_demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-mpx/wf-mpx-demo/aws.nextflow.config",
     "url": "https://github.com/epi2me-labs/wf-mpx",
     "type": "object",
     "definitions": {
@@ -165,11 +166,6 @@
         },
         "aws_queue": {
             "type": "string",
-            "hidden": true
-        },
-        "wfversion": {
-            "type": "string",
-            "default": "v0.0.6",
             "hidden": true
         },
         "_reference": {

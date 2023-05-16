@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """Create workflow report."""
 
-import argparse
 import math
 
 from aplanat import bars
@@ -14,6 +13,8 @@ from bokeh.plotting import figure
 import pandas as pd
 import pysam
 import vcf
+
+from .util import wf_parser  # noqa: ABS101
 
 
 def load_fasta(reference):
@@ -217,9 +218,9 @@ def make_assembly_summary(bed, report):
     section.plot(p)
 
 
-def main():
-    """Run the entry point."""
-    parser = argparse.ArgumentParser()
+def argparser():
+    """Argument parser for entrypoint."""
+    parser = wf_parser("report")
     parser.add_argument("report", help="Report output file")
     parser.add_argument("summaries", nargs='+', help="Read summary file.")
     parser.add_argument(
@@ -246,8 +247,11 @@ def main():
     parser.add_argument(
         "--commit", default='unknown',
         help="git commit of the executed workflow")
-    args = parser.parse_args()
+    return parser
 
+
+def main(args):
+    """Run the entry point."""
     report = WFReport(
         "wf-mpx Sequencing Report", "wf-mpx",
         revision=args.revision, commit=args.commit)
@@ -291,7 +295,3 @@ def main():
 
     # write report
     report.write(args.report)
-
-
-if __name__ == "__main__":
-    main()
