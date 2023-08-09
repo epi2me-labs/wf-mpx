@@ -17,8 +17,9 @@
                 "fastq": {
                     "type": "string",
                     "format": "path",
+                    "title": "FASTQ",
                     "description": "FASTQ files to use in the analysis.",
-                    "help_text": "This accepts one of three cases: (i) the path to a single FASTQ file; (ii) the path to a top-level directory containing FASTQ files; (iii) the path to a directory containing one level of sub-directories which in turn contain FASTQ files. In the first and second case, a sample name can be supplied with `--sample`. In the last case, the data is assumed to be multiplexed with the names of the sub-directories as barcodes. In this case, a sample sheet can be provided with `--sample_sheet`."
+                    "help_text": "This accepts one of three cases: (i) the path to a single FASTQ file; (ii) the path to a top-level directory containing FASTQ files; (iii) the path to a directory containing one level of sub-directories which in turn contain FASTQ files. In the first and second case, a sample name can be supplied with `--sample`. In the last case, the data is assumed to be multiplexed with the names of the sub-directories as barcodes."
                 },
                 "reference": {
                     "type": "string",
@@ -35,6 +36,7 @@
                 "analyse_unclassified": {
                     "type": "boolean",
                     "default": false,
+                    "title": "Analyse unclassified reads",
                     "description": "Analyse unclassified reads from input directory. By default the workflow will not process reads in the unclassified directory.",
                     "help_text": "If selected and if the input is a multiplex directory the workflow will also process the unclassified directory."
                 }
@@ -84,6 +86,7 @@
                 },
                 "min_coverage": {
                     "type": "number",
+                    "title": "Minimum coverage",
                     "description": "Coverage threshold for masking in the consensus step.",
                     "help_text": "Regions with less than the coverage entered here are masked (nucleotide sequences will be replaced with N) when generating the consensus. It might be useful to decrease this value if you have very low coverage, but this will affect the quality of your consensus sequence.",
                     "min": 1,
@@ -95,14 +98,15 @@
                     "help_text": "Only applicable when flye assembly is used (default). You can use this field to give `medaka_consensus` command line options for the assembly process of the workflow. For example, you could change the model by entering `\"-m r941_min_high_g303\"`. The full string of options should be quoted as in the example."
                 },
                 "align_threads": {
-                    "type": "number",
+                    "type": "integer",
+                    "title": "Alignment threads",
                     "description": "Number of CPU threads to use per alignment task.",
                     "help_text": "The total CPU resource used by the workflow is constrained by the executor configuration.",
                     "min": 1,
                     "default": 4
                 },
                 "assembly_threads": {
-                    "type": "number",
+                    "type": "integer",
                     "description": "Number of CPU threads to use per assembly task.",
                     "help_text": "The total CPU resource used by the workflow is constrained by the executor configuration.",
                     "min": 1,
