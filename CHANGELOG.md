@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [unreleased]
+### Changed
+- Bumped minimum required Nextflow version to 23.04.2.
+- Enum choices are enumerated in the `--help` output.
+- Enum choices are enumerated as part of the error message when a user has selected an invalid choice.
+- Updated GitHub issue templates to force capture of more information.
+- Example command to use demo data.
+- Spaces in sample aliases are now replaced with underscores.
+- Deprecated parameter `process_label`.
+
 ## [v0.0.7]
 ### Changed
 - Updated whole workflow to bring up-to-date with recent template changes
