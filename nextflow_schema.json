@@ -89,7 +89,7 @@
                     "title": "Minimum coverage",
                     "description": "Coverage threshold for masking in the consensus step.",
                     "help_text": "Regions with less than the coverage entered here are masked (nucleotide sequences will be replaced with N) when generating the consensus. It might be useful to decrease this value if you have very low coverage, but this will affect the quality of your consensus sequence.",
-                    "min": 1,
+                    "minimum": 1,
                     "default": 20
                 },
                 "medaka_options": {
@@ -102,14 +102,14 @@
                     "title": "Alignment threads",
                     "description": "Number of CPU threads to use per alignment task.",
                     "help_text": "The total CPU resource used by the workflow is constrained by the executor configuration.",
-                    "min": 1,
+                    "minimum": 1,
                     "default": 4
                 },
                 "assembly_threads": {
                     "type": "integer",
                     "description": "Number of CPU threads to use per assembly task.",
                     "help_text": "The total CPU resource used by the workflow is constrained by the executor configuration.",
-                    "min": 1,
+                    "minimum": 1,
                     "default": 4
                 }
             }
