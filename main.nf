@@ -13,7 +13,7 @@
 import groovy.json.JsonBuilder
 nextflow.enable.dsl = 2
 
-include { fastq_ingress } from './lib/fastqingress'
+include { fastq_ingress } from './lib/ingress'
 
 process alignReads {
     label "wfmpx"
@@ -146,7 +146,7 @@ process getParams {
 process makeReport {
     label "wfmpx"
     input:
-        path "seqs.txt"
+        path "per_read_stats/?.gz"
         path "versions/*"
         path "params.json"
         path variants
@@ -161,7 +161,7 @@ process makeReport {
 
     workflow-glue report $report_name \
         --versions versions \
-        seqs.txt \
+        per_read_stats/* \
         --params params.json \
         --variants ${variants} \
         --coverage ${coverage} \
@@ -177,9 +177,13 @@ process makeReport {
 process output {
     // publish inputs to output directory
     label "wfmpx"
-    publishDir "${params.out_dir}", mode: 'copy', pattern: "*"
+    publishDir (
+        "${params.out_dir}",
+        mode: 'copy',
+        saveAs: { fname_as ?: fname }
+    )
     input:
-        path fname
+        tuple path(fname), val(fname_as)
     output:
         path fname
     """
@@ -209,7 +213,7 @@ workflow pipeline {
 
 
         report = makeReport(
-            reads | map { it[2].resolve("per-read-stats.tsv") } | collectFile(keepHeader: true),
+            reads.map{ it[2].resolve("per-read-stats.tsv.gz") }.toList(),
             software_versions.collect(),
             workflow_params,
             variants.map{it[2]}.collect(),
@@ -219,7 +223,6 @@ workflow pipeline {
         )
     emit:
         results = report.concat(
-            reads | map { it[2].resolve("per-read-stats.tsv") } | collectFile(keepHeader: true),
             alignment.alignment.map{it[2]}.collect(),
             alignment.alignment.map{it[3]}.collect(),
             variants.map{it[2]}.collect(),
@@ -237,9 +240,7 @@ workflow pipeline {
 // entrypoint workflow
 WorkflowMain.initialise(workflow, params, log)
 workflow {
-    if (params.disable_ping == false) {
-        Pinguscript.ping_post(workflow, "start", "none", params.out_dir, params)
-    }
+    Pinguscript.ping_start(nextflow, workflow, params)
 
     if (params.reference == null){
         params.remove('reference')
@@ -257,19 +258,24 @@ workflow {
        "input":params.fastq,
        "sample":params.sample,
        "sample_sheet":null,
-       "fastcat_stats":true ])
+       "stats":true ])
 
     pipeline(samples, params._reference, params._genbank)
-    output(pipeline.out.results)
+
+    pipeline.out.results.map {
+        // map outputs to [it, null] to write outputs to top level out_dir
+        it -> [it, null]
+    }.mix(
+        // mix in per-read-stats
+        samples.map {it -> [it[2].resolve("per-read-stats.tsv.gz"), "${it[0].alias}.per-read-stats.tsv.gz"]}
+    ) 
+    | output
 
 }
 
-if (params.disable_ping == false) {
-    workflow.onComplete {
-        Pinguscript.ping_post(workflow, "end", "none", params.out_dir, params)
-    }
-
-    workflow.onError {
-        Pinguscript.ping_post(workflow, "error", "$workflow.errorMessage", params.out_dir, params)
-    }
+workflow.onComplete {
+    Pinguscript.ping_complete(nextflow, workflow, params)
+}
+workflow.onError {
+    Pinguscript.ping_error(nextflow, workflow, params)
 }
