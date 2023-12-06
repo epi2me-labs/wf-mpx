@@ -2,6 +2,7 @@
 """Create workflow report."""
 
 import math
+import os
 
 from aplanat import bars
 from aplanat.components import fastcat
@@ -148,10 +149,10 @@ def make_variants_context(variants_data, reference, report):
             variants_data['start'], variants_data['alternate'])]
 
     summary = variants_data.context.value_counts().to_frame().set_axis(
-        ['Count'], axis=1, inplace=False)
+        ['Count'], axis=1)
 
     summary.index.name = 'Variant'
-    summary.reset_index(inplace=True)
+    summary = summary.reset_index()
     summary = summary[summary.Variant != "NA"]
 
     variants_context_plot = bars.simple_bar(
@@ -187,9 +188,8 @@ def make_assembly_summary(bed, report):
     to the reference chosen for analysis.</p>""")
 
     contigs = pd.read_csv(bed, sep='\t', header=0).set_axis(
-            ['referece', 'start', 'end', 'name', 'qual', 'strand'],
-            axis=1,
-            inplace=False)
+            ['reference', 'start', 'end', 'name', 'qual', 'strand'],
+            axis=1)
 
     p = figure(
             x_axis_label='position',
@@ -273,8 +273,9 @@ def main(args):
     represented as "-" and insertions are in lower case. The consensus __will
     require manual review__.""")
 
-    report.add_section(
-        section=fastcat.full_report(args.summaries))
+    if os.path.exists(args.summaries[0]):
+        report.add_section(
+            section=fastcat.full_report(args.summaries))
 
     variants = load_vcf(args.variants)
 
@@ -286,7 +287,8 @@ def main(args):
 
     make_variants_table(variants, report)
 
-    make_assembly_summary(args.assembly_bed, report)
+    if not open(args.assembly_bed).readline() == '':
+        make_assembly_summary(args.assembly_bed, report)
 
     report.add_section(
         section=scomponents.version_table(args.versions))
