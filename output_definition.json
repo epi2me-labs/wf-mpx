@@ -1,0 +1,61 @@
+{
+  "files": {
+    "Workflow-report": {
+      "filepath": "./wf-mpx-report.html",
+      "title": "workflow report",
+      "description": "The report for the workflow",
+      "mime-type": "text/html",
+      "optional": false,
+      "type": "aggregated"
+    },
+    "assembly_fastq" : {
+      "filepath": "./{{ alias }}.final.fastq",
+      "title": "Assembly FASTQ",
+      "description": "Sequence and quality score for final assembly.",
+      "mime-type": "text/plain",
+      "optional": false,
+      "type": "per-sample"
+    },
+    "consensus_fasta" : {
+      "filepath": "./consensus.fasta",
+      "title": "Consensus assembly FASTA",
+      "description": "De-novo consensus assembly sequence from flye and polished by medaka.",
+      "mime-type": "text/plain",
+      "optional": true,
+      "type": "per-sample"
+    },
+    "draft_consensus_fasta" : {
+      "filepath": "./{{ alias }}.draft.consensus.fasta",
+      "title": "Draft consensus FASTA",
+      "description": "Draft consensus sequence from bcftools.",
+      "mime-type": "text/plain",
+      "optional": false,
+      "type": "per-sample"
+    },
+    "per-read-stats" : {
+      "filepath": "./{{ alias }}.per-read-stats.tsv.gz",
+      "title": "Read Stats",
+      "description": "A simple text file providing a summary of sequencing reads.",
+      "mime-type": "application/gzip",
+      "optional": true,
+      "type": "per-sample"
+    },
+    "read-alignment" : {
+      "filepath": "./{{ alias }}.bam",
+      "title": "Read alignment",
+      "description": "Read alignments in BAM format.",
+      "mime-type": "application/x-gzip",
+      "optional": true,
+      "type": "per-sample"
+    },
+    "variants-file" : {
+      "filepath": "./{{ alias }}.annotate.filtered.vcf",
+      "title": "Variants file",
+      "description": "Called variants in VCF format.",
+      "mime-type": "text/plain",
+      "optional": false,
+      "type": "per-sample"
+    }
+  }
+}
+

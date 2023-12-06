@@ -14,20 +14,27 @@ import groovy.json.JsonBuilder
 nextflow.enable.dsl = 2
 
 include { fastq_ingress } from './lib/ingress'
+include { xam_ingress } from './lib/ingress'  
 
 process alignReads {
     label "wfmpx"
-    cpus params.align_threads
+    cpus 4
+    memory '2GB'
     input:
-        tuple val(sample_id), val(type), path(sample_fastq), path(sample_stats)
+        tuple val(sample_id), val(type), path(sample), path(sample_stats)
         path reference
     output:
         tuple val(sample_id), val(type), path("${sample_id}.bam"), path("${sample_id}.bam.bai"), emit: alignment
         tuple path("${sample_id}.bamstats"), path("${sample_id}.bam.summary"), emit: bamstats
     """
-    mini_align -i ${sample_fastq} -r ${reference} -p ${sample_id} -t ${params.align_threads} -m
-    stats_from_bam -o ${sample_id}.bamstats -s ${sample_id}.bam.summary -t ${params.align_threads} ${sample_id}.bam
-
+    if [[ $sample == *.fastq || $sample == *.fq || $sample == *.fastq.gz || $sample == *.fq.gz ]]; then
+        mini_align -i ${sample} -r ${reference} -p ${sample_id} -t 4 -m
+    else
+        mv ${sample} ${sample_id}.bam
+        samtools index ${sample_id}.bam
+    fi
+    stats_from_bam -o ${sample_id}.bamstats -s ${sample_id}.bam.summary -t 4 ${sample_id}.bam
+    
     #Keep only mapped reads going forward
     #samtools view -b -F 4 ${sample_id}_all.bam > ${sample_id}.bam
     """
@@ -36,6 +43,7 @@ process alignReads {
 process coverageCalc {
     label "wfmpx"
     cpus 1
+    memory '2GB'
     input:
         tuple val(sample_id), val(type), path("${sample_id}.bam"), path("${sample_id}.bam.bai")
         path reference
@@ -50,8 +58,9 @@ process coverageCalc {
 
 
 process medakaVariants {
-    label "wfmpx"
-    cpus 2
+    label "medaka"
+    cpus 1
+    memory '8GB'
     input:
         tuple val(sample_id), val(type), path("${sample_id}.bam"), path("${sample_id}.bam.bai")
         path reference
@@ -62,10 +71,8 @@ process medakaVariants {
     medaka consensus ${sample_id}.bam ${sample_id}.hdf
     medaka variant --gvcf ${reference} ${sample_id}.hdf ${sample_id}.vcf --verbose
     medaka tools annotate --debug --pad 25 ${sample_id}.vcf ${reference} ${sample_id}.bam ${sample_id}.annotate.vcf
-
     bcftools filter -e "ALT='.'" ${sample_id}.annotate.vcf | bcftools filter -o ${sample_id}.annotate.filtered.vcf -O v -e "INFO/DP<${params.min_coverage}" -
-
-    vcf-annotator ${sample_id}.annotate.filtered.vcf ${genbank} > ${sample_id}.vcf-annotator.vcf
+    # vcf-annotator ${sample_id}.annotate.filtered.vcf ${genbank} > ${sample_id}.vcf-annotator.vcf
     """
 
 }
@@ -73,6 +80,7 @@ process medakaVariants {
 process makeConsensus {
     label "wfmpx"
     cpus 1
+    memory '500MB'
     input:
         tuple val(sample_id), val(type), path("${sample_id}.annotate.filtered.vcf")
         path reference
@@ -90,7 +98,24 @@ process makeConsensus {
 
 process flyeAssembly {
     label "wfmpx"
-    cpus params.assembly_threads
+    cpus 4
+    memory '16GB'
+    input:
+        tuple val(sample_id), val(type), path("${sample_id}.bam"), path("${sample_id}.bam.bai")
+        path reference
+    output:
+        tuple val(sample_id), val(type), path("flye/assembly.fasta"), path("${sample_id}_restricted.fastq"), path(reference)
+    script:
+    """
+    samtools bam2fq ${sample_id}.bam > ${sample_id}_restricted.fastq
+    flye --nano-raw ${sample_id}_restricted.fastq  -g 197k -t 4 --meta -o flye
+    """
+}
+
+process noAssembly{
+    label "wfmpx"
+    cpus 1
+    memory '10MB'
     input:
         tuple val(sample_id), val(type), path("${sample_id}.bam"), path("${sample_id}.bam.bai")
         path reference
@@ -98,33 +123,70 @@ process flyeAssembly {
         tuple val(sample_id), val(type), path("medaka/consensus.fasta"), path("${sample_id}_assembly_mapped.bam"), path("${sample_id}_assembly.bed")
     script:
     """
-    samtools bam2fq ${sample_id}.bam > ${sample_id}_restricted.fastq
-    flye --nano-raw ${sample_id}_restricted.fastq  -g 197k -t ${params.assembly_threads} --meta -o flye
+    mkdir medaka
+    touch medaka/consensus.fasta
+    touch ${sample_id}_assembly_mapped.bam
+    touch ${sample_id}_assembly.bed
+    """
+}
 
-    # polish assembly with medaka
+process medaka_polish {
+    label "medaka"
+    cpus 1
+    memory '16GB'
+    input:
+        tuple val(sample_id), val(type), path("flye/assembly.fasta"), path("${sample_id}_restricted.fastq"), path(reference)
+    output:
+        tuple val(sample_id), val(type), path("medaka/consensus.fasta"), path("${sample_id}_assembly_mapped.bam")
+    script:
+    """
+    medaka_consensus -i ${sample_id}_restricted.fastq -t 1 -d flye/assembly.fasta ${params.medaka_options}
+    minimap2 -ax map-ont ${reference} medaka/consensus.fasta -t 1 | samtools view -bh - | samtools sort - > ${sample_id}_assembly_mapped.bam
+    """
+}
 
-    medaka_consensus -i ${sample_id}_restricted.fastq -t ${params.assembly_threads} -d flye/assembly.fasta ${params.medaka_options}
-
-    minimap2 -ax map-ont ${reference} medaka/consensus.fasta | samtools view -bh - | samtools sort - > ${sample_id}_assembly_mapped.bam
-
-    # make a bed file - we'll use this to plot the assembly in the report
+process bamtobed {
+    label "wfmpx"
+    cpus 1
+    memory '500MB'
+    input:
+        tuple val(sample_id), val(type), path("medaka/consensus.fasta"), path("${sample_id}_assembly_mapped.bam")
+    output:
+        tuple val(sample_id), val(type), path("medaka/consensus.fasta"), path("${sample_id}_assembly_mapped.bam"), path("${sample_id}_assembly.bed")
+    script:
+    """
     bedtools bamtobed -i ${sample_id}_assembly_mapped.bam > ${sample_id}_assembly.bed
+
     """
 }
 
 process getVersions {
     label "wfmpx"
     cpus 1
+    memory '500MB'
     output:
         path "versions.txt"
     script:
     """
     python -c "import pysam; print(f'pysam,{pysam.__version__}')" >> versions.txt
     fastcat --version | sed 's/^/fastcat,/' >> versions.txt
-    medaka --version | sed 's/ /,/' >> versions.txt
     bedtools --version | sed 's/ /,/' >> versions.txt
     flye --version | sed 's/^/flye,/' >> versions.txt
     bcftools --version | head -1 | sed 's/ /,/' >> versions.txt
+    """
+}
+
+process getVersions_medaka {
+    label "medaka"
+    cpus 1
+    memory '500MB'
+    input:
+        path "versions.txt"
+    output:
+        path "versions.txt"
+    script:
+    """
+    medaka --version | sed 's/ /,/' >> versions.txt
     """
 }
 
@@ -132,6 +194,7 @@ process getVersions {
 process getParams {
     label "wfmpx"
     cpus 1
+    memory '500MB'
     output:
         path "params.json"
     script:
@@ -145,6 +208,8 @@ process getParams {
 
 process makeReport {
     label "wfmpx"
+    cpus 1
+    memory '1GB'
     input:
         path "per_read_stats/?.gz"
         path "versions/*"
@@ -158,6 +223,7 @@ process makeReport {
     script:
         report_name = "wf-mpx-report.html"
     """
+    [ -e ${assembly_bed} ] || echo "" > ${assembly_bed}
 
     workflow-glue report $report_name \
         --versions versions \
@@ -177,6 +243,8 @@ process makeReport {
 process output {
     // publish inputs to output directory
     label "wfmpx"
+    cpus 1
+    memory '500MB'
     publishDir (
         "${params.out_dir}",
         mode: 'copy',
@@ -204,13 +272,13 @@ workflow pipeline {
         coverage = coverageCalc(alignment.alignment, reference)
         variants = medakaVariants(alignment.alignment, reference, genbank)
         draft = makeConsensus(variants, reference, coverage)
-        software_versions = getVersions()
+        software_versions = getVersions()|getVersions_medaka
         workflow_params = getParams()
-
-        if (params.assembly == true) {
-          assembly = flyeAssembly(alignment.alignment, reference)
+	if (params.assembly) {
+                assembly = flyeAssembly(alignment.alignment, reference)|medaka_polish|bamtobed
+	} else {
+                assembly = noAssembly(alignment.alignment, reference)
         }
-
 
         report = makeReport(
             reads.map{ it[2].resolve("per-read-stats.tsv.gz") }.toList(),
@@ -240,6 +308,12 @@ workflow pipeline {
 // entrypoint workflow
 WorkflowMain.initialise(workflow, params, log)
 workflow {
+
+    if (params.bam && params.fastq) {
+    log.error "Please choose only one of --fastq or --bam"
+    exit 1
+    }
+
     Pinguscript.ping_start(nextflow, workflow, params)
 
     if (params.reference == null){
@@ -254,22 +328,38 @@ workflow {
         params.remove('reference')
     }
 
+    if (params.fastq) {
     samples = fastq_ingress([
        "input":params.fastq,
        "sample":params.sample,
        "sample_sheet":null,
        "stats":true ])
+    } else if (params.bam) {
+        samples = xam_ingress([
+       "input":params.bam,
+       "sample":params.sample,
+       "sample_sheet":null,
+       "stats":true ])
+    } else {
+        println 'ERROR: No input data provided!'
+        exit 1
+    }
 
     pipeline(samples, params._reference, params._genbank)
 
-    pipeline.out.results.map {
+    to_out = pipeline.out.results.map {
         // map outputs to [it, null] to write outputs to top level out_dir
         it -> [it, null]
-    }.mix(
-        // mix in per-read-stats
-        samples.map {it -> [it[2].resolve("per-read-stats.tsv.gz"), "${it[0].alias}.per-read-stats.tsv.gz"]}
-    ) 
-    | output
+    }
+    if (params.fastq) {
+        to_out.mix(
+            // mix in per-read-stats
+            samples.map {it -> [it[2].resolve("per-read-stats.tsv.gz"), "${it[0].alias}.per-read-stats.tsv.gz"]}
+        ) 
+        | output
+    } else{
+        to_out|output
+    }
 
 }
 

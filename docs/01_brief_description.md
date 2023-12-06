@@ -1,0 +1,1 @@
+A basic workflow for analysing ONT Mpox data to create draft consensus or de-novo assemblies.

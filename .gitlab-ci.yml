@@ -10,3 +10,4 @@ variables:
     # (not things such as -profile)
     NF_WORKFLOW_OPTS: "--fastq test_data/fastq/barcode01"
     CI_FLAVOUR: "new"
+    NF_IGNORE_PROCESSES: "flyeAssembly,noAssembly"
