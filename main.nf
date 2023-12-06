@@ -99,7 +99,7 @@ process makeConsensus {
 process flyeAssembly {
     label "wfmpx"
     cpus 4
-    memory '16GB'
+    memory '28GB'
     input:
         tuple val(sample_id), val(type), path("${sample_id}.bam"), path("${sample_id}.bam.bai")
         path reference
