@@ -1,20 +1,12 @@
 {
   "files": {
-    "Workflow-report": {
+    "workflow-report": {
       "filepath": "./wf-mpx-report.html",
-      "title": "workflow report",
+      "title": "Workflow report",
       "description": "The report for the workflow",
       "mime-type": "text/html",
       "optional": false,
       "type": "aggregated"
-    },
-    "assembly_fastq" : {
-      "filepath": "./{{ alias }}.final.fastq",
-      "title": "Assembly FASTQ",
-      "description": "Sequence and quality score for final assembly.",
-      "mime-type": "text/plain",
-      "optional": false,
-      "type": "per-sample"
     },
     "consensus_fasta" : {
       "filepath": "./consensus.fasta",
@@ -24,7 +16,7 @@
       "optional": true,
       "type": "per-sample"
     },
-    "draft_consensus_fasta" : {
+    "draft-consensus-fasta" : {
       "filepath": "./{{ alias }}.draft.consensus.fasta",
       "title": "Draft consensus FASTA",
       "description": "Draft consensus sequence from bcftools.",
@@ -34,7 +26,7 @@
     },
     "per-read-stats" : {
       "filepath": "./{{ alias }}.per-read-stats.tsv.gz",
-      "title": "Read Stats",
+      "title": "Read stats",
       "description": "A simple text file providing a summary of sequencing reads.",
       "mime-type": "application/gzip",
       "optional": true,
@@ -44,7 +36,15 @@
       "filepath": "./{{ alias }}.bam",
       "title": "Read alignment",
       "description": "Read alignments in BAM format.",
-      "mime-type": "application/x-gzip",
+      "mime-type": "application/gzip",
+      "optional": true,
+      "type": "per-sample"
+    },
+    "read-alignment-index": {
+      "filepath": "./{{ alias }}.bam.bai",
+      "title": "Alignment index file",
+      "description": "Index file of BAM file.",
+      "mime-type": "application/octet-stream",
       "optional": true,
       "type": "per-sample"
     },
@@ -52,6 +52,14 @@
       "filepath": "./{{ alias }}.annotate.filtered.vcf",
       "title": "Variants file",
       "description": "Called variants in VCF format.",
+      "mime-type": "text/plain",
+      "optional": false,
+      "type": "per-sample"
+    },
+    "depth-file" : {
+      "filepath": "./{{ alias }}.annotate.filtered.vcf",
+      "title": "Depth file",
+      "description": "Per-base depth: overall, forward and reverse.",
       "mime-type": "text/plain",
       "optional": false,
       "type": "per-sample"
