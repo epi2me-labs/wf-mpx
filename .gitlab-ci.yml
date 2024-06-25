@@ -8,6 +8,49 @@ variables:
     # The workflow should define `--out_dir`, the CI template sets this.
     # Only common file inputs and option values need to be given here
     # (not things such as -profile)
-    NF_WORKFLOW_OPTS: "--fastq test_data/fastq/barcode01"
+    NF_WORKFLOW_OPTS: --fastq test_data/fastq/barcode01 -executor.\$$local.memory 32GB
     CI_FLAVOUR: "new"
-    NF_IGNORE_PROCESSES: "flyeAssembly,noAssembly"
+    NF_IGNORE_PROCESSES: "noAssembly"
+
+docker-run:
+  tags: [large_ram]
+
+  # Define a 1D job matrix to inject a variable named MATRIX_NAME into
+  #   the CI environment, we can use the value of MATRIX_NAME to determine
+  #   which options to apply as part of the rules block below
+  # NOTE There is a slightly cleaner way to define this matrix to include
+  #   the variables, but it is broken when using long strings! See CW-756
+  parallel:
+    matrix:
+      - MATRIX_NAME:
+          [
+            "fastq",
+            "no-assembly",
+            "bam",
+            "ubam",
+          ]
+  rules:
+    # NOTE As we're overriding the rules block for the included docker-run
+    #   we must redefine this CI_COMMIT_BRANCH rule to prevent docker-run
+    #   being incorrectly scheduled for "detached merge request pipelines" etc.
+    - if: ($CI_COMMIT_BRANCH == null || $CI_COMMIT_BRANCH == "dev-template")
+      when: never
+    - if: $MATRIX_NAME == "fastq"
+      # use default workflow opts defined above
+    - if: $MATRIX_NAME == "no-assembly"
+      variables:
+        NF_WORKFLOW_OPTS: >
+          -executor.\$$local.memory 32GB
+          --fastq test_data/fastq/barcode01
+          --assembly false
+        NF_IGNORE_PROCESSES: flyeAssembly,medaka_polish,bamtobed
+    - if: $MATRIX_NAME == "bam"
+      variables:
+        NF_WORKFLOW_OPTS: >
+          -executor.\$$local.memory 32GB
+          --bam test_data/bam
+    - if: $MATRIX_NAME == "ubam"
+      variables:
+        NF_WORKFLOW_OPTS: >
+          -executor.\$$local.memory 32GB
+          --bam test_data/ubam

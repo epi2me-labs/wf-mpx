@@ -16,27 +16,48 @@ nextflow.enable.dsl = 2
 include { fastq_ingress } from './lib/ingress'
 include { xam_ingress } from './lib/ingress'  
 
+OPTIONAL_FILE = file("$projectDir/data/OPTIONAL_FILE")
+
 process alignReads {
     label "wfmpx"
     cpus 4
     memory '2GB'
     input:
-        tuple val(sample_id), val(type), path(sample), path(sample_stats)
+        // `reads` can be FASTQ, BAM, or uBAM
+        tuple val(meta), path("input"), path("index")
         path reference
     output:
         tuple val(sample_id), val(type), path("${sample_id}.bam"), path("${sample_id}.bam.bai"), emit: alignment
         tuple path("${sample_id}.bamstats"), path("${sample_id}.bam.summary"), emit: bamstats
+    script:
+        sample_id = meta.alias
+        type = meta.type
     """
-    if [[ $sample == *.fastq || $sample == *.fq || $sample == *.fastq.gz || $sample == *.fq.gz ]]; then
-        mini_align -i ${sample} -r ${reference} -p ${sample_id} -t 4 -m
+    # if FASTQ or uBAM, align
+    if [[ ${params.fastq || meta.is_unaligned} = true ]]; then
+        ${params.fastq ? "cat" : "samtools fastq -T '*'" } input \\
+        | minimap2 -ax map-ont --secondary=no -L --MD -t 3 "$reference" - \\
+            --cap-kalloc 100m --cap-sw-mem 50m \\
+        | samtools sort --write-index -o ${sample_id}.bam##idx##${sample_id}.bam.bai
     else
-        mv ${sample} ${sample_id}.bam
-        samtools index ${sample_id}.bam
+        # we got BAM; make sure it was aligned against the provided reference
+        samtools faidx "$reference"
+        ref_name=\$(cut -f1 ${reference}.fai)
+        bam_ref_name=\$(
+            samtools view -H input | grep '^@SQ' | grep -oP 'SN:\\K[^\\s]+'
+        )
+        if [[ \$bam_ref_name != \$ref_name ]]; then
+            >&2 echo -n "BAM file appears to have been aligned against a "
+            >&2 echo "different reference:"
+            >&2 echo "Ref. name in BAM file: '\$bam_ref_name'"
+            >&2 echo "Ref. name in '$reference': '\$ref_name'"
+            exit 1
+        fi
+        # no need to align, just rename 
+        mv input ${sample_id}.bam
+        mv index ${sample_id}.bam.bai
     fi
     stats_from_bam -o ${sample_id}.bamstats -s ${sample_id}.bam.summary -t 4 ${sample_id}.bam
-    
-    #Keep only mapped reads going forward
-    #samtools view -b -F 4 ${sample_id}_all.bam > ${sample_id}.bam
     """
 }
 
@@ -54,8 +75,6 @@ process coverageCalc {
     mv ${sample_id}*.depth.txt ${sample_id}.depth.txt
     """
 }
-
-
 
 process medakaVariants {
     label "medaka"
@@ -132,7 +151,7 @@ process noAssembly{
 
 process medaka_polish {
     label "medaka"
-    cpus 1
+    cpus 2
     memory '16GB'
     input:
         tuple val(sample_id), val(type), path("flye/assembly.fasta"), path("${sample_id}_restricted.fastq"), path(reference)
@@ -141,7 +160,9 @@ process medaka_polish {
     script:
     """
     medaka_consensus -i ${sample_id}_restricted.fastq -t 1 -d flye/assembly.fasta ${params.medaka_options}
-    minimap2 -ax map-ont ${reference} medaka/consensus.fasta -t 1 | samtools view -bh - | samtools sort - > ${sample_id}_assembly_mapped.bam
+    minimap2 -ax map-ont ${reference} medaka/consensus.fasta -t 1 \\
+        --cap-kalloc 100m --cap-sw-mem 50m \\
+    | samtools sort -o ${sample_id}_assembly_mapped.bam
     """
 }
 
@@ -211,7 +232,7 @@ process makeReport {
     cpus 1
     memory '1GB'
     input:
-        path "per_read_stats/?.gz"
+        path "per-read-stats.tsv.gz"
         path "versions/*"
         path "params.json"
         path variants
@@ -227,7 +248,7 @@ process makeReport {
 
     workflow-glue report $report_name \
         --versions versions \
-        per_read_stats/* \
+        per-read-stats.tsv.gz \
         --params params.json \
         --variants ${variants} \
         --coverage ${coverage} \
@@ -267,21 +288,29 @@ workflow pipeline {
         reference
         genbank
     main:
-        samples_for_processing = reads.map {it -> [it[0].alias, it[0].type, it[1], it[2]]}
-        alignment = alignReads(samples_for_processing, reference)
+        alignment = alignReads(
+            reads.map { meta, reads, index, stats -> [meta, reads, index] },
+            reference,
+        )
         coverage = coverageCalc(alignment.alignment, reference)
         variants = medakaVariants(alignment.alignment, reference, genbank)
         draft = makeConsensus(variants, reference, coverage)
         software_versions = getVersions()|getVersions_medaka
         workflow_params = getParams()
-	if (params.assembly) {
-                assembly = flyeAssembly(alignment.alignment, reference)|medaka_polish|bamtobed
-	} else {
-                assembly = noAssembly(alignment.alignment, reference)
+
+        if (params.assembly) {
+            assembly = flyeAssembly(alignment.alignment, reference)|medaka_polish|bamtobed
+        } else {
+            assembly = noAssembly(alignment.alignment, reference)
+        }
+
+        per_read_stats = reads.map { meta, reads, index, stats ->
+            // the glob `"*read*stats.tsv.gz"` matches bamstats and fastcat per-read stats
+            [meta, file(stats.resolve("*read*stats.tsv.gz"))]
         }
 
         report = makeReport(
-            reads.map{ it[2].resolve("per-read-stats.tsv.gz") }.toList(),
+            per_read_stats.map { meta, stats -> stats },
             software_versions.collect(),
             workflow_params,
             variants.map{it[2]}.collect(),
@@ -290,6 +319,7 @@ workflow pipeline {
             assembly
         )
     emit:
+        per_read_stats
         results = report.concat(
             alignment.alignment.map{it[2]}.collect(),
             alignment.alignment.map{it[3]}.collect(),
@@ -298,7 +328,8 @@ workflow pipeline {
             draft.map{it[2]}.collect(),
             coverage,
             assembly.map{it[2]}.collect(),
-            software_versions
+            software_versions,
+            workflow_params
         )
         // TODO: use something more useful as telemetry
         telemetry = workflow_params
@@ -329,38 +360,44 @@ workflow {
     }
 
     if (params.fastq) {
-    samples = fastq_ingress([
-       "input":params.fastq,
-       "sample":params.sample,
-       "sample_sheet":null,
-       "stats":true ])
-    } else if (params.bam) {
-        samples = xam_ingress([
-       "input":params.bam,
-       "sample":params.sample,
-       "sample_sheet":null,
-       "stats":true ])
+        samples = fastq_ingress([
+            "input":params.fastq,
+            "sample":params.sample,
+            "sample_sheet":null,
+            "stats":true,
+            "per_read_stats":true,
+        ])
+        | map { meta, reads, stats -> [meta, reads, OPTIONAL_FILE, stats] }
     } else {
-        println 'ERROR: No input data provided!'
-        exit 1
+        samples = xam_ingress([
+            "input":params.bam,
+            "sample":params.sample,
+            "sample_sheet":null,
+            "keep_unaligned":true,  // we don't support uBAM yet, but keep them to throw an error below
+            "stats":true,
+            "per_read_stats":true,
+        ])
+    }
+
+    // make sure we only got one sample
+    samples
+    | toList
+    | subscribe {
+        if (it.size() > 1) {
+            error "Found more than one barcode / sample; this is currently not supported."
+        }
     }
 
     pipeline(samples, params._reference, params._genbank)
 
-    to_out = pipeline.out.results.map {
-        // map outputs to [it, null] to write outputs to top level out_dir
-        it -> [it, null]
-    }
-    if (params.fastq) {
-        to_out.mix(
-            // mix in per-read-stats
-            samples.map {it -> [it[2].resolve("per-read-stats.tsv.gz"), "${it[0].alias}.per-read-stats.tsv.gz"]}
-        ) 
-        | output
-    } else{
-        to_out|output
-    }
-
+    Channel.empty()
+    | mix(
+        pipeline.out.per_read_stats
+        | map { meta, stats -> [stats, "${meta.alias}.per-read-stats.tsv.gz"] },
+        pipeline.out.results
+        | map { it -> [it, null] },
+    )
+    | output
 }
 
 workflow.onComplete {

@@ -43,12 +43,27 @@ def main(args):
     ]
 
     if not os.path.exists(args.sample_sheet) or not os.path.isfile(args.sample_sheet):
-        sys.stdout.write(f"Could not open sample sheet '{args.sample_sheet}'.")
+        sys.stdout.write("Could not open sample sheet file.")
         sys.exit()
 
     try:
         encoding = determine_codec(args.sample_sheet)
         with open(args.sample_sheet, "r", encoding=encoding) as f:
+            try:
+                # Excel files don't throw any error until here
+                csv.Sniffer().sniff(f.readline())
+                f.seek(0)  # return to initial position again
+            except Exception as e:
+                # Excel fails with UniCode error
+                sys.stdout.write(
+                    "The sample sheet doesn't seem to be a CSV file.\n"
+                    "The sample sheet has to be a CSV file.\n"
+                    "Please verify that the sample sheet is a CSV file.\n"
+                    f"Parsing error: {e}"
+                 )
+
+                sys.exit()
+
             csv_reader = csv.DictReader(f)
             n_row = 0
             for row in csv_reader:
