@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [unreleased]
+### Added
+- Support for uBAM (unaligned BAM) input files.
+### Changed
+- Now checks if input BAM files have been aligned against the selected reference.
+
 ## [v1.0.0]
 ### Added
 - Workflow can now take either a BAM file or FASTQ file as input.

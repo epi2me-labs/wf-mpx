@@ -18,15 +18,16 @@
                 "bam": {
                     "type": "string",
                     "format": "file-path",
+                    "title": "BAM",
                     "description": "BAM file to use in the analysis.",
-                    "help_text": "Path to a single BAM file, or a directory containing a single BAM file. Multiple samples are not currently supported."
+                    "help_text": "Path to a single BAM file, or a single directory containing one or more BAM files. Multiple samples are not currently supported."
                 },
                 "fastq": {
                     "type": "string",
                     "format": "path",
                     "title": "FASTQ",
                     "description": "FASTQ file to use in the analysis.",
-                    "help_text": "Path to a single FASTQ file, or a directory containing a single FASTQ file. Multiple samples are not currently supported."
+                    "help_text": "Path to a single FASTQ file, or a single directory containing one or more FASTQ files. Multiple samples or barcodes are not currently supported."
                 },
                 "reference": {
                     "type": "string",
@@ -41,7 +42,18 @@
                     "default": "MT903344.1"
                 }
             },
-            "required": []
+            "oneOf": [
+                {
+                    "required": [
+                        "fastq"
+                    ]
+                },
+                {
+                    "required": [
+                        "bam"
+                    ]
+                }
+            ]
         },
         "samples": {
             "title": "Sample Options",

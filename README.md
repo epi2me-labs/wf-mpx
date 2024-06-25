@@ -79,15 +79,46 @@ Find related protocols in the [Nanopore community](https://community.nanoporetec
 
 
 
-## Inputs
+## Input example
+
+This workflow accepts either FASTQ or BAM files as input.
+
+The `--fastq` and `--bam` input parameters for this workflow accept a path to a single FASTQ/BAM file or a folder containing multiple FASTQ/BAM files for the sample. A sample name can be supplied with `--sample`. When BAM files are provided, these must contain alignments against the target reference.
+
+Examples for the two possible input configurations are shown below (using FASTQ files, but the same structure can be used with BAM).
+
+```
+(i)                             (ii)
+input_reads.fastq.gz        -── input_directory
+                                ├── reads0.fastq.gz
+                                └── reads1.fastq.gz
+```
+
+
+
+## Input parameters
 
 ### Input Options
 
 | Nextflow parameter name  | Type | Description | Help | Default |
 |--------------------------|------|-------------|------|---------|
-| bam | string | BAM file to use in the analysis. | Path to a single BAM file, or a directory containing a single BAM file. Multiple samples are not currently supported. |  |
-| fastq | string | FASTQ file to use in the analysis. | Path to a single FASTQ file, or a directory containing a single FASTQ file. Multiple samples are not currently supported. |  |
+| bam | string | BAM file to use in the analysis. | Path to a single BAM file, or a single directory containing one or more BAM files. Multiple samples are not currently supported. |  |
+| fastq | string | FASTQ file to use in the analysis. | Path to a single FASTQ file, or a single directory containing one or more FASTQ files. Multiple samples or barcodes are not currently supported. |  |
 | reference | string | The reference genome to use for mapping. | This is used if inputting a FASTQ file. We provide four popular mpox reference sequences with which to map your reads to. More information can be found here: https://labs.epi2me.io/basic-mpox-workflow | MT903344.1 |
+
+
+### Sample Options
+
+| Nextflow parameter name  | Type | Description | Help | Default |
+|--------------------------|------|-------------|------|---------|
+| sample | string | A sample name for the outputs. |  |  |
+
+
+### Output Options
+
+| Nextflow parameter name  | Type | Description | Help | Default |
+|--------------------------|------|-------------|------|---------|
+| out_dir | string | Directory for output of all workflow results. |  | output |
 
 
 ### Advanced Options
@@ -99,20 +130,13 @@ Find related protocols in the [Nanopore community](https://community.nanoporetec
 | medaka_options | string | Pass through options to `medaka_consensus` during assembly. | Only applicable when flye assembly is used (default). You can use this field to give `medaka_consensus` command line options for the assembly process of the workflow. For example, you could change the model by entering `"-m r941_min_high_g303"`. The full string of options should be quoted as in the example. |  |
 
 
-### Miscellaneous Options
-
-| Nextflow parameter name  | Type | Description | Help | Default |
-|--------------------------|------|-------------|------|---------|
-| disable_ping | boolean | Enable to prevent sending a workflow ping. |  | False |
-
-
 
 
 
 
 ## Outputs
 
-Outputs files may be aggregated including information for all samples or provided per sample. Per-sample files will be prefixed with respective aliases and represented below as {{ alias }}.
+Output files may be aggregated including information for all samples or provided per sample. Per-sample files will be prefixed with respective aliases and represented below as {{ alias }}.
 
 | Title | File path | Description | Per sample or aggregated |
 |-------|-----------|-------------|--------------------------|
