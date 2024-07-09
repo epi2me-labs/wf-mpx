@@ -25,8 +25,8 @@
 
 | Nextflow parameter name  | Type | Description | Help | Default |
 |--------------------------|------|-------------|------|---------|
+| override_basecaller_cfg | string | Override auto-detected basecaller model that processed the signal data; used to select an appropriate Medaka model. | Per default, the workflow tries to determine the basecall model from the input data. This parameter can be used to override the detected value (or to provide a model name if none was found in the inputs). However, users should only do this if they know for certain which model was used as selecting the wrong option might give sub-optimal results. A list of recent models can be found here: https://github.com/nanoporetech/dorado#DNA-models. |  |
 | assembly | boolean | Perform assembly with flye. | Take the reads mapped to the mpx reference and perform a de novo assembly using flye. This might be useful to uncover any structural variation not present in your chosen reference genome. Turning off will reduce run times and computational intensity at the expense of not being able to identify structural variants. | True |
 | min_coverage | number | Coverage threshold for masking in the consensus step. | Regions with less than the coverage entered here are masked (nucleotide sequences will be replaced with N) when generating the consensus. It might be useful to decrease this value if you have very low coverage, but this will affect the quality of your consensus sequence. | 20 |
-| medaka_options | string | Pass through options to `medaka_consensus` during assembly. | Only applicable when flye assembly is used (default). You can use this field to give `medaka_consensus` command line options for the assembly process of the workflow. For example, you could change the model by entering `"-m r941_min_high_g303"`. The full string of options should be quoted as in the example. |  |
 
 
