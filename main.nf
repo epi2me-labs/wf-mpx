@@ -53,7 +53,7 @@ process alignReads {
             >&2 echo "Ref. name in '$reference': '\$ref_name'"
             exit 1
         fi
-        # no need to align, just rename 
+        # no need to align, just rename
         mv input ${sample_id}.bam
         mv index ${sample_id}.bam.bai
     fi
@@ -81,13 +81,14 @@ process medakaVariants {
     cpus 1
     memory '8GB'
     input:
-        tuple val(sample_id), val(type), path("${sample_id}.bam"), path("${sample_id}.bam.bai")
+        tuple val(sample_id), val(type), path("${sample_id}.bam"), path("${sample_id}.bam.bai"), val(basecall_model)
         path reference
         path genbank
     output:
         tuple val(sample_id), val(type), path("${sample_id}.annotate.filtered.vcf")
+    script:
     """
-    medaka consensus ${sample_id}.bam ${sample_id}.hdf
+    medaka consensus ${sample_id}.bam ${sample_id}.hdf --model ${basecall_model}:consensus
     medaka variant --gvcf ${reference} ${sample_id}.hdf ${sample_id}.vcf --verbose
     medaka tools annotate --debug --pad 25 ${sample_id}.vcf ${reference} ${sample_id}.bam ${sample_id}.annotate.vcf
     bcftools filter -e "ALT='.'" ${sample_id}.annotate.vcf | bcftools filter -o ${sample_id}.annotate.filtered.vcf -O v -e "INFO/DP<${params.min_coverage}" -
@@ -154,12 +155,19 @@ process medaka_polish {
     cpus 2
     memory '16GB'
     input:
-        tuple val(sample_id), val(type), path("flye/assembly.fasta"), path("${sample_id}_restricted.fastq"), path(reference)
+        tuple val(sample_id),
+        val(type),
+        path("flye/assembly.fasta"),
+        path("${sample_id}_restricted.fastq"),
+        path(reference),
+        val(basecall_model)
     output:
         tuple val(sample_id), val(type), path("medaka/consensus.fasta"), path("${sample_id}_assembly_mapped.bam")
     script:
     """
-    medaka_consensus -i ${sample_id}_restricted.fastq -t 1 -d flye/assembly.fasta ${params.medaka_options}
+    medaka_consensus -i ${sample_id}_restricted.fastq -t 1 -d flye/assembly.fasta \
+        -m ${basecall_model}:consensus
+
     minimap2 -ax map-ont ${reference} medaka/consensus.fasta -t 1 \\
         --cap-kalloc 100m --cap-sw-mem 50m \\
     | samtools sort -o ${sample_id}_assembly_mapped.bam
@@ -288,18 +296,41 @@ workflow pipeline {
         reference
         genbank
     main:
+        // get basecall models: we use `params.override_basecaller_cfg` if present;
+        // otherwise use `meta.basecall_models[0]` (there should only be one value in
+        // the list because we're running ingress with `allow_multiple_basecall_models:
+        // false`; note that `[0]` on an empty list returns `null`)
+        basecall_models = reads
+        | map { meta, reads, index, stats ->
+            String basecall_model = \
+                params.override_basecaller_cfg ?: meta.basecall_models[0]
+            if (!basecall_model) {
+                error "Found no basecall model information in the input data for " + \
+                    "sample '$meta.alias'. Please provide it with the " + \
+                    "`--override_basecaller_cfg` parameter."
+            }
+            [meta.alias, basecall_model]
+        }
+
         alignment = alignReads(
             reads.map { meta, reads, index, stats -> [meta, reads, index] },
             reference,
         )
         coverage = coverageCalc(alignment.alignment, reference)
-        variants = medakaVariants(alignment.alignment, reference, genbank)
+        variants = medakaVariants(
+            alignment.alignment.join(basecall_models),
+            reference,
+            genbank
+        )
         draft = makeConsensus(variants, reference, coverage)
         software_versions = getVersions()|getVersions_medaka
         workflow_params = getParams()
 
         if (params.assembly) {
-            assembly = flyeAssembly(alignment.alignment, reference)|medaka_polish|bamtobed
+            assembly = flyeAssembly(alignment.alignment, reference)
+            | join(basecall_models)
+            | medaka_polish
+            | bamtobed
         } else {
             assembly = noAssembly(alignment.alignment, reference)
         }
@@ -339,13 +370,13 @@ workflow pipeline {
 // entrypoint workflow
 WorkflowMain.initialise(workflow, params, log)
 workflow {
-
-    if (params.bam && params.fastq) {
-    log.error "Please choose only one of --fastq or --bam"
-    exit 1
-    }
-
     Pinguscript.ping_start(nextflow, workflow, params)
+
+    // warn the user if overriding the basecall models found in the inputs
+    if (params.override_basecaller_cfg) {
+        log.warn \
+            "Overriding basecall model with '${params.override_basecaller_cfg}'."
+    }
 
     if (params.reference == null){
         params.remove('reference')
@@ -359,23 +390,23 @@ workflow {
         params.remove('reference')
     }
 
+    Map ingress_args = [
+        "sample": params.sample,
+        "sample_sheet": null,
+        "stats": true,
+        "per_read_stats": true,
+        "allow_multiple_basecall_models": false,
+    ]
+
     if (params.fastq) {
-        samples = fastq_ingress([
+        samples = fastq_ingress(ingress_args + [
             "input":params.fastq,
-            "sample":params.sample,
-            "sample_sheet":null,
-            "stats":true,
-            "per_read_stats":true,
         ])
         | map { meta, reads, stats -> [meta, reads, OPTIONAL_FILE, stats] }
     } else {
-        samples = xam_ingress([
+        samples = xam_ingress(ingress_args + [
             "input":params.bam,
-            "sample":params.sample,
-            "sample_sheet":null,
-            "keep_unaligned":true,  // we don't support uBAM yet, but keep them to throw an error below
-            "stats":true,
-            "per_read_stats":true,
+            "keep_unaligned":true,
         ])
     }
 

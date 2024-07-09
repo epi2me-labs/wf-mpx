@@ -4,11 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
+## [v1.1.0]
 ### Added
 - Support for uBAM (unaligned BAM) input files.
+- `--override_basecaller_cfg` parameter for cases where automatic basecall model detection fails or users wish to override the automatic choice.
 ### Changed
 - Now checks if input BAM files have been aligned against the selected reference.
+- Updated Medaka to v1.12.0.
+### Removed
+- The `--medaka_options` parameter as the appropriate Medaka model is now automatically determined from the input data.
 
 ## [v1.0.0]
 ### Added
