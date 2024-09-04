@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """Create workflow report."""
-
+import json
 import math
 import os
 
@@ -80,9 +80,9 @@ def make_coverage_section(coverage_file, variants_data, report_doc):
     section = report_doc.add_section()
     section._add_item("""<h3>Genome coverage</h3>
 
-    <p>The plot below shows coverage of the whole genome. Dots represent
-    single nucleotide polymorphisms called by medaka. Bars represent
-    insertions and deletions called by medaka.</p>""")
+    <p>The plot below shows read depth across the whole genome, annotated with variants
+    in the reference-based assembly called by Medaka. Dots represent single nucleotide
+    polymorphisms, while bars represent insertions and deletions.</p>""")
 
     max_coverage = max(coverage['depth'])
 
@@ -137,12 +137,12 @@ def get_context(variant, fasta):
 def make_variants_context(variants_data, reference, report):
     """Make variants context section."""
     section = report.add_section()
-    section._add_item("""<h3>Variant context</h3>
+    section._add_item("""<h3>Mutational spectrum</h3>
 
-    <p>APOBEC3 host enzyme action has been implicated in the mutational process
-    of MPX. As described in <a href="https://tinyurl.com/2fawchvu">this</a>
-    <a href="https://virological.org">virological.org</a> post by Áine O’Toole
-    & Andrew Rambaut.<p>""")
+    <p>Evidence of APOBEC3 host enzyme editing has been observed in Monkeypox virus
+    (MPXV), as described in <a href="https://tinyurl.com/2fawchvu">this virological.org
+    post</a> by Áine O’Toole & Andrew Rambaut. The mutational spectrum of the
+    reference-based assembly is shown below.</p>""")
 
     variants_data['context'] = [
         get_context(x, reference) for x in zip(
@@ -168,8 +168,8 @@ def make_variants_table(variants_data, report):
     section = report.add_section()
     section._add_item("""<h3>All variants</h3>
 
-    <p>Variants with respect to the reference sequence as called by medaka
-    .</p>""")
+    <p>The following table shows variants in the reference-based assembly called
+    by Medaka with respect to the chosen reference sequence.</p>""")
     section.table(
             variants_data,
             index=False,
@@ -182,10 +182,10 @@ def make_variants_table(variants_data, report):
 def make_assembly_summary(bed, report):
     """Make a plot for the assembly."""
     section = report.add_section()
-    section._add_item("""<h3>Flye Assembly</h3>
+    section._add_item("""<h3>De novo assembly</h3>
 
-    <p>Quick assembly of the reads. Below the contigs are displayed as mapped
-    to the reference chosen for analysis.</p>""")
+    <p>The plot below shows an alignment of <em>de novo</em> assembly contigs to the
+    chosen reference sequence.</p>""")
 
     contigs = pd.read_csv(bed, sep='\t', header=0).set_axis(
             ['reference', 'start', 'end', 'name', 'qual', 'strand'],
@@ -215,6 +215,8 @@ def make_assembly_summary(bed, report):
         text_color=ont_colors.BRAND_BLUE)
     p.add_layout(labels)
 
+    p.xaxis.formatter = BasicTickFormatter(use_scientific=False)
+
     section.plot(p)
 
 
@@ -242,6 +244,12 @@ def argparser():
         "--params", default=None, required=True,
         help="A JSON file containing the workflow parameter key/values")
     parser.add_argument(
+        "--nextclade_ref", default=None, required=True,
+        help="A JSON file containing the nextclade result")
+    parser.add_argument(
+        "--nextclade_denovo", default=None,
+        help="A JSON file containing the nextclade result")
+    parser.add_argument(
         "--revision", default='unknown',
         help="git branch/tag of the executed workflow")
     parser.add_argument(
@@ -259,23 +267,66 @@ def main(args):
     section = report.add_section()
     section.markdown(""" ### Preamble
 
-    This workflow is intended to produce a __draft__ consensus Monkeypox virus
+    This workflow is intended to assemble a __draft__ consensus Monkeypox virus (MPXV)
     genome from Oxford Nanopore Technologies Sequencing data.
 
     The rough outline of this workflow:
 
     * Map reads to a reference genome
-    * Call variants, using medaka, with respect to this reference
-    * Create a consensus using these called variants
-    * Attempt assembly with flye polsihed with medaka
+    * Call variants with respect to this reference using Medaka
+    * Create a consensus sequence by applying these variants to the reference
+    * Attempt *de novo* assembly with Flye, polished with Medaka (optional)
 
-    Consensus is masked ('N') in regions of <20x coverage, deletions are
-    represented as "-" and insertions are in lower case. The consensus __will
-    require manual review__.""")
+    Assembled consensus sequences are masked ('N') in regions of <20x coverage,
+    deletions are represented as "-", and insertions are in lower case. Resulting
+    assemblies __will require manual review__.""")
 
     if os.path.exists(args.summaries[0]):
         report.add_section(
             section=fastcat.full_report(args.summaries))
+
+    with open(args.nextclade_ref, 'r') as file:
+        data = json.load(file)
+
+    section = report.add_section()
+    section.markdown("""
+### Nextclade results
+#### Reference-based assembly
+""")
+    if len(data['results']) > 0:
+        section.table(pd.DataFrame(
+            {
+                'clade': [data['results'][0]['clade']],
+                'coverage': [data['results'][0]['coverage']],
+                'overall_qc': [data['results'][0]['qc']['overallStatus']]}))
+    else:
+        section.markdown("""
+        Clade typing was unsuccessful.
+        """)
+
+    if len(data['errors']) > 0:
+        section.table(pd.DataFrame(data['errors']))
+
+    if args.nextclade_denovo:
+        with open(args.nextclade_denovo, 'r') as file:
+            data = json.load(file)
+
+        section.markdown("""
+        #### *De novo* assembly
+        """)
+        if len(data['results']) > 0:
+            section.table(pd.DataFrame(
+                {
+                    'clade': [data['results'][0]['clade']],
+                    'coverage': [data['results'][0]['coverage']],
+                    'overall_qc': [data['results'][0]['qc']['overallStatus']]}))
+        else:
+            section.markdown("""
+            Clade typing was unsuccessful.
+            """)
+
+        if len(data['errors']) > 0:
+            section.table(pd.DataFrame(data['errors']))
 
     variants = load_vcf(args.variants)
 

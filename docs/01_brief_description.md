@@ -1,1 +1,1 @@
-A basic workflow for analysing ONT Mpox data to create draft consensus or de-novo assemblies.
+A workflow for analysing ONT monkeypox virus (MPXV) sequences to create draft consensus or de novo assemblies.
