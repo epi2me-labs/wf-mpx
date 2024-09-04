@@ -10,7 +10,6 @@ variables:
     # (not things such as -profile)
     NF_WORKFLOW_OPTS: >
         --fastq test_data/fastq/barcode01
-        --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac@v4.2.0
         -executor.\$$local.memory 32GB
     CI_FLAVOUR: "new"
     NF_IGNORE_PROCESSES: "noAssembly"
@@ -45,19 +44,15 @@ docker-run:
         NF_WORKFLOW_OPTS: >
           -executor.\$$local.memory 32GB
           --fastq test_data/fastq/barcode01
-          --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac@v4.2.0
           --assembly false
-        NF_IGNORE_PROCESSES: flyeAssembly,medaka_polish,bamtobed
+        NF_IGNORE_PROCESSES: "flyeAssembly,medaka_polish,bamtobed,nextclade_full"
     - if: $MATRIX_NAME == "bam"
       variables:
         NF_WORKFLOW_OPTS: >
           -executor.\$$local.memory 32GB
           --bam test_data/bam
-          --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac@v4.2.0
     - if: $MATRIX_NAME == "ubam"
       variables:
-        # the uBAM test data contains a basecall model (no
-        # `--override_basecaller_cfg` needed)
         NF_WORKFLOW_OPTS: >
           -executor.\$$local.memory 32GB
           --bam test_data/ubam

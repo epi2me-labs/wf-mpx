@@ -1,6 +1,6 @@
-# Mpox metagenomics assembly workflow
+# MPXV metagenomic assembly workflow
 
-A basic workflow for analysing ONT Mpox data to create draft consensus or de-novo assemblies.
+A workflow for analysing ONT monkeypox virus (MPXV) sequences to create draft consensus or de novo assemblies.
 
 
 
@@ -75,6 +75,7 @@ the following command:
 ```
 nextflow pull epi2me-labs/wf-mpx
 ```
+
 A demo dataset is provided for testing of the workflow.
 It can be downloaded and unpacked using the following commands:
 ```
@@ -87,6 +88,7 @@ nextflow run epi2me-labs/wf-mpx \
 	--fastq 'wf-mpx-demo/fastq/barcode01' \
 	-profile standard
 ```
+
 For further information about running a workflow on
 the command line see https://labs.epi2me.io/wfquickstart/
 
@@ -126,7 +128,7 @@ input_reads.fastq.gz        -── input_directory
 |--------------------------|------|-------------|------|---------|
 | bam | string | BAM file to use in the analysis. | Path to a single BAM file, or a single directory containing one or more BAM files. Multiple samples are not currently supported. |  |
 | fastq | string | FASTQ file to use in the analysis. | Path to a single FASTQ file, or a single directory containing one or more FASTQ files. Multiple samples or barcodes are not currently supported. |  |
-| reference | string | The reference genome to use for mapping. | This is used if inputting a FASTQ file. We provide four popular mpox reference sequences with which to map your reads to. More information can be found here: https://labs.epi2me.io/basic-mpox-workflow | MT903344.1 |
+| reference | string | The reference genome to use for mapping. | This is used if inputting a FASTQ file. We provide five MPXV reference sequences for alignment, representing clades I and II. More information can be found in our [blog post introducing this workflow](https://labs.epi2me.io/basic-mpox-workflow) | NC_003310.1 |
 
 
 ### Sample Options
@@ -148,7 +150,7 @@ input_reads.fastq.gz        -── input_directory
 | Nextflow parameter name  | Type | Description | Help | Default |
 |--------------------------|------|-------------|------|---------|
 | override_basecaller_cfg | string | Override auto-detected basecaller model that processed the signal data; used to select an appropriate Medaka model. | Per default, the workflow tries to determine the basecall model from the input data. This parameter can be used to override the detected value (or to provide a model name if none was found in the inputs). However, users should only do this if they know for certain which model was used as selecting the wrong option might give sub-optimal results. A list of recent models can be found here: https://github.com/nanoporetech/dorado#DNA-models. |  |
-| assembly | boolean | Perform assembly with flye. | Take the reads mapped to the mpx reference and perform a de novo assembly using flye. This might be useful to uncover any structural variation not present in your chosen reference genome. Turning off will reduce run times and computational intensity at the expense of not being able to identify structural variants. | True |
+| assembly | boolean | Perform assembly with flye. | Take the reads mapped to the mpx reference and perform a de novo assembly using Flye. This might be useful to uncover any structural variation not present in your chosen reference genome. Turning off will reduce run times and computational intensity at the expense of not being able to identify structural variants. | True |
 | min_coverage | number | Coverage threshold for masking in the consensus step. | Regions with less than the coverage entered here are masked (nucleotide sequences will be replaced with N) when generating the consensus. It might be useful to decrease this value if you have very low coverage, but this will affect the quality of your consensus sequence. | 20 |
 
 
@@ -163,8 +165,8 @@ Output files may be aggregated including information for all samples or provided
 | Title | File path | Description | Per sample or aggregated |
 |-------|-----------|-------------|--------------------------|
 | Workflow report | ./wf-mpx-report.html | The report for the workflow | aggregated |
-| Consensus assembly FASTA | ./consensus.fasta | De-novo consensus assembly sequence from flye and polished by medaka. | per-sample |
-| Draft consensus FASTA | ./{{ alias }}.draft.consensus.fasta | Draft consensus sequence from bcftools. | per-sample |
+| De novo consensus assembly FASTA | ./denovo.consensus.fasta | De novo consensus assembly sequence from Flye and polished by Medaka. | per-sample |
+| Reference-based consensus assembly FASTA | ./{{ alias }}.ref.consensus.fasta | Reference-based consensus sequence from Bcftools. | per-sample |
 | Read stats | ./{{ alias }}.per-read-stats.tsv.gz | A simple text file providing a summary of sequencing reads. | per-sample |
 | Read alignment | ./{{ alias }}.bam | Read alignments in BAM format. | per-sample |
 | Alignment index file | ./{{ alias }}.bam.bai | Index file of BAM file. | per-sample |

@@ -8,18 +8,18 @@
       "optional": false,
       "type": "aggregated"
     },
-    "consensus_fasta" : {
-      "filepath": "./consensus.fasta",
-      "title": "Consensus assembly FASTA",
-      "description": "De-novo consensus assembly sequence from flye and polished by medaka.",
+    "denovo-consensus-fasta" : {
+      "filepath": "./denovo.consensus.fasta",
+      "title": "De novo consensus assembly FASTA",
+      "description": "De novo consensus assembly sequence from Flye and polished by Medaka.",
       "mime-type": "text/plain",
       "optional": true,
       "type": "per-sample"
     },
     "draft-consensus-fasta" : {
-      "filepath": "./{{ alias }}.draft.consensus.fasta",
-      "title": "Draft consensus FASTA",
-      "description": "Draft consensus sequence from bcftools.",
+      "filepath": "./{{ alias }}.ref.consensus.fasta",
+      "title": "Reference-based consensus assembly FASTA",
+      "description": "Reference-based consensus sequence from Bcftools.",
       "mime-type": "text/plain",
       "optional": false,
       "type": "per-sample"

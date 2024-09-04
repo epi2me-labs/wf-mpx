@@ -2,8 +2,8 @@
     "$schema": "http://json-schema.org/draft-07/schema",
     "$id": "https://raw.githubusercontent.com/./master/nextflow_schema.json",
     "title": "epi2me-labs/wf-mpx",
-    "workflow_title": "Mpox metagenomics assembly workflow",
-    "description": "A basic workflow for analysing ONT Mpox data to create draft consensus or de-novo assemblies.",
+    "workflow_title": "MPXV metagenomic assembly workflow",
+    "description": "A workflow for analysing ONT monkeypox virus (MPXV) sequences to create draft consensus or de novo assemblies.",
     "demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-mpx/wf-mpx-demo.tar.gz",
     "aws_demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-mpx/wf-mpx-demo/aws.nextflow.config",
     "url": "https://github.com/epi2me-labs/wf-mpx",
@@ -32,14 +32,15 @@
                 "reference": {
                     "type": "string",
                     "description": "The reference genome to use for mapping.",
-                    "help_text": "This is used if inputting a FASTQ file. We provide four popular mpox reference sequences with which to map your reads to. More information can be found here: https://labs.epi2me.io/basic-mpox-workflow",
+                    "help_text": "This is used if inputting a FASTQ file. We provide five MPXV reference sequences for alignment, representing clades I and II. More information can be found in our [blog post introducing this workflow](https://labs.epi2me.io/basic-mpox-workflow)",
                     "enum": [
                         "MN648051.1",
                         "MT903344.1",
                         "ON568298.1",
-                        "ON563414.1"
+                        "ON563414.1",
+                        "NC_003310.1"
                     ],
-                    "default": "MT903344.1"
+                    "default": "NC_003310.1"
                 }
             },
             "oneOf": [
@@ -128,7 +129,7 @@
                 "assembly": {
                     "type": "boolean",
                     "description": "Perform assembly with flye.",
-                    "help_text": "Take the reads mapped to the mpx reference and perform a de novo assembly using flye. This might be useful to uncover any structural variation not present in your chosen reference genome. Turning off will reduce run times and computational intensity at the expense of not being able to identify structural variants.",
+                    "help_text": "Take the reads mapped to the mpx reference and perform a de novo assembly using Flye. This might be useful to uncover any structural variation not present in your chosen reference genome. Turning off will reduce run times and computational intensity at the expense of not being able to identify structural variants.",
                     "default": true
                 },
                 "min_coverage": {

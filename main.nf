@@ -14,7 +14,13 @@ import groovy.json.JsonBuilder
 nextflow.enable.dsl = 2
 
 include { fastq_ingress } from './lib/ingress'
-include { xam_ingress } from './lib/ingress'  
+include { xam_ingress } from './lib/ingress'
+
+include {
+    nextclade as nextclade_ref;
+    nextclade as nextclade_denovo
+} from './modules/local/nextclade'
+
 
 OPTIONAL_FILE = file("$projectDir/data/OPTIONAL_FILE")
 
@@ -106,13 +112,13 @@ process makeConsensus {
         path reference
         path depth
     output:
-        tuple val(sample_id), val(type), path("${sample_id}.draft.consensus.fasta")
+        tuple val(sample_id), val(type), path("${sample_id}.ref.consensus.fasta")
     """
     reference_name=`basename ${reference} .fasta`
     awk -v ref=\${reference_name} '{if (\$2<${params.min_coverage}) print ref"\t"\$1+1}' ${depth}  > mask.regions
     bgzip ${sample_id}.annotate.filtered.vcf
     tabix ${sample_id}.annotate.filtered.vcf.gz
-    bcftools consensus --mask mask.regions  --mark-del '-' --mark-ins lc --fasta-ref ${reference} -o ${sample_id}.draft.consensus.fasta ${sample_id}.annotate.filtered.vcf.gz
+    bcftools consensus --mask mask.regions  --mark-del '-' --mark-ins lc --fasta-ref ${reference} -o ${sample_id}.ref.consensus.fasta ${sample_id}.annotate.filtered.vcf.gz
     """
 }
 
@@ -128,7 +134,7 @@ process flyeAssembly {
     script:
     """
     samtools bam2fq ${sample_id}.bam > ${sample_id}_restricted.fastq
-    flye --nano-raw ${sample_id}_restricted.fastq  -g 197k -t 4 --meta -o flye
+    flye --nano-raw ${sample_id}_restricted.fastq -g 197k -t 4 --meta -o flye
     """
 }
 
@@ -140,11 +146,11 @@ process noAssembly{
         tuple val(sample_id), val(type), path("${sample_id}.bam"), path("${sample_id}.bam.bai")
         path reference
     output:
-        tuple val(sample_id), val(type), path("medaka/consensus.fasta"), path("${sample_id}_assembly_mapped.bam"), path("${sample_id}_assembly.bed")
+        tuple val(sample_id), val(type), path("medaka/denovo.consensus.fasta"), path("${sample_id}_assembly_mapped.bam"), path("${sample_id}_assembly.bed")
     script:
     """
     mkdir medaka
-    touch medaka/consensus.fasta
+    touch medaka/denovo.consensus.fasta
     touch ${sample_id}_assembly_mapped.bam
     touch ${sample_id}_assembly.bed
     """
@@ -162,13 +168,13 @@ process medaka_polish {
         path(reference),
         val(basecall_model)
     output:
-        tuple val(sample_id), val(type), path("medaka/consensus.fasta"), path("${sample_id}_assembly_mapped.bam")
+        tuple val(sample_id), val(type), path("medaka/denovo.consensus.fasta"), path("${sample_id}_assembly_mapped.bam")
     script:
     """
     medaka_consensus -i ${sample_id}_restricted.fastq -t 1 -d flye/assembly.fasta \
         -m ${basecall_model}:consensus
-
-    minimap2 -ax map-ont ${reference} medaka/consensus.fasta -t 1 \\
+    mv medaka/consensus.fasta medaka/denovo.consensus.fasta
+    minimap2 -ax map-ont ${reference} medaka/denovo.consensus.fasta -t 1 \\
         --cap-kalloc 100m --cap-sw-mem 50m \\
     | samtools sort -o ${sample_id}_assembly_mapped.bam
     """
@@ -179,9 +185,9 @@ process bamtobed {
     cpus 1
     memory '500MB'
     input:
-        tuple val(sample_id), val(type), path("medaka/consensus.fasta"), path("${sample_id}_assembly_mapped.bam")
+        tuple val(sample_id), val(type), path("medaka/denovo.consensus.fasta"), path("${sample_id}_assembly_mapped.bam")
     output:
-        tuple val(sample_id), val(type), path("medaka/consensus.fasta"), path("${sample_id}_assembly_mapped.bam"), path("${sample_id}_assembly.bed")
+        tuple val(sample_id), val(type), path("medaka/denovo.consensus.fasta"), path("${sample_id}_assembly_mapped.bam"), path("${sample_id}_assembly.bed")
     script:
     """
     bedtools bamtobed -i ${sample_id}_assembly_mapped.bam > ${sample_id}_assembly.bed
@@ -247,12 +253,15 @@ process makeReport {
         path coverage
         path reference
         tuple val(sample_id), val(type), path(consensus), path(mapped_consensus), path(assembly_bed)
+        path "nextclade_ref.json"
+        path nextclade_denovo_json, stageAs: "nextclade_denovo.json"
     output:
         path "wf-mpx-*.html"
     script:
-        report_name = "wf-mpx-report.html"
+        String report_name = "wf-mpx-report.html"
+        String nextclade_denovo_arg = params.assembly ? "--nextclade_denovo nextclade_denovo.json" : ""
     """
-    [ -e ${assembly_bed} ] || echo "" > ${assembly_bed}
+    [ -e ${assembly_bed} ] || echo "" > ${assembly_bed};
 
     workflow-glue report $report_name \
         --versions versions \
@@ -261,7 +270,9 @@ process makeReport {
         --variants ${variants} \
         --coverage ${coverage} \
         --reference ${reference} \
-        --assembly_bed ${assembly_bed}
+        --assembly_bed ${assembly_bed} \
+        --nextclade_ref nextclade_ref.json \
+        ${nextclade_denovo_arg}
     """
 }
 
@@ -322,17 +333,21 @@ workflow pipeline {
             reference,
             genbank
         )
-        draft = makeConsensus(variants, reference, coverage)
+        consensus = makeConsensus(variants, reference, coverage)
+        nextclade_ref_json = nextclade_ref(consensus.map{it[2]}.collect(), "ref")
         software_versions = getVersions()|getVersions_medaka
         workflow_params = getParams()
-
         if (params.assembly) {
             assembly = flyeAssembly(alignment.alignment, reference)
             | join(basecall_models)
             | medaka_polish
             | bamtobed
+
+            nextclade_denovo_json = nextclade_denovo(assembly.map{it[2]}.collect(), "denovo")
+
         } else {
             assembly = noAssembly(alignment.alignment, reference)
+            nextclade_denovo_json = OPTIONAL_FILE
         }
 
         per_read_stats = reads.map { meta, reads, index, stats ->
@@ -347,7 +362,9 @@ workflow pipeline {
             variants.map{it[2]}.collect(),
             coverage,
             reference,
-            assembly
+            assembly,
+            nextclade_ref_json,
+            nextclade_denovo_json
         )
     emit:
         per_read_stats
@@ -356,7 +373,7 @@ workflow pipeline {
             alignment.alignment.map{it[3]}.collect(),
             variants.map{it[2]}.collect(),
             variants.map{it[3]}.collect(),
-            draft.map{it[2]}.collect(),
+            consensus.map{it[2]}.collect(),
             coverage,
             assembly.map{it[2]}.collect(),
             software_versions,
