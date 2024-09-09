@@ -216,11 +216,12 @@ process getVersions_medaka {
     cpus 1
     memory '500MB'
     input:
-        path "versions.txt"
+        path "other_versions.txt"
     output:
         path "versions.txt"
     script:
     """
+    cat other_versions.txt > versions.txt
     medaka --version | sed 's/ /,/' >> versions.txt
     """
 }
