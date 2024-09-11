@@ -21,12 +21,12 @@ We expect data to be generated from a mixed population sample hence the use of t
 Recommended requirements:
 
 + CPUs = 4
-+ Memory = 16GB
++ Memory = 32GB
 
 Minimum requirements:
 
 + CPUs = 4
-+ Memory = 10GB
++ Memory = 16GB
 
 Approximate run time: 45 minutes
 

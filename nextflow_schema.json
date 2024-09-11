@@ -218,11 +218,11 @@
     "resources": {
         "recommended": {
             "cpus": 4,
-            "memory": "16GB"
+            "memory": "32GB"
         },
         "minimum": {
             "cpus": 4,
-            "memory": "10GB"
+            "memory": "16GB"
         },
         "run_time": "45 minutes",
         "arm_support": true

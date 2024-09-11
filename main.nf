@@ -125,7 +125,7 @@ process makeConsensus {
 process flyeAssembly {
     label "wfmpx"
     cpus 4
-    memory '28GB'
+    memory '31GB'
     input:
         tuple val(sample_id), val(type), path("${sample_id}.bam"), path("${sample_id}.bam.bai")
         path reference
@@ -159,7 +159,7 @@ process noAssembly{
 process medaka_polish {
     label "medaka"
     cpus 2
-    memory '16GB'
+    memory '15GB'
     input:
         tuple val(sample_id),
         val(type),
