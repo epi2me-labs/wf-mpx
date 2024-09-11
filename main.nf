@@ -226,6 +226,19 @@ process getVersions_medaka {
     """
 }
 
+process getVersions_nextclade {
+    label "nextclade"
+    cpus 1
+    input:
+        path "other_versions.txt"
+    output:
+        path "versions.txt"
+    script:
+    """
+    cat other_versions.txt > versions.txt
+    nextclade --version | sed 's/ /,/' >> versions.txt
+    """
+}
 
 process getParams {
     label "wfmpx"
@@ -336,7 +349,7 @@ workflow pipeline {
         )
         consensus = makeConsensus(variants, reference, coverage)
         nextclade_ref_json = nextclade_ref(consensus.map{it[2]}.collect(), "ref")
-        software_versions = getVersions()|getVersions_medaka
+        software_versions = getVersions()|getVersions_medaka|getVersions_nextclade
         workflow_params = getParams()
         if (params.assembly) {
             assembly = flyeAssembly(alignment.alignment, reference)
