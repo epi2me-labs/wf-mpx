@@ -5,9 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [Unreleased]
+## [v1.1.3]
 ### Fixed
 - Updated recommended (32GB) and minimum (16GB, with `--assembly false`) memory requirements.
+### Changed
+- Reconcile workflow with wf-template v5.2.6.
 
 ## [v1.1.2]
 ### Changed
