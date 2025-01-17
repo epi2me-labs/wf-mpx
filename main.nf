@@ -409,16 +409,15 @@ workflow {
             "Overriding basecall model with '${params.override_basecaller_cfg}'."
     }
 
-    if (params.reference == null){
-        params.remove('reference')
-        params._reference = projectDir.resolve("./data/references/MT903344.1.fasta").toString()
-        params._genbank = projectDir.resolve("./data/references/MT903344.1.gb").toString()
-    } else {
+    if (params.reference_fasta == null){
         path = projectDir.resolve("./data/references/"+params.reference+".fasta").toString()
         params._reference = file(path, type: "file", checkIfExists:true).toString()
         path_genbank = projectDir.resolve("./data/references/"+params.reference+".gb").toString()
         params._genbank = file(path_genbank, type: "file", checkIfExists:true).toString()
         params.remove('reference')
+    } else {
+        params._reference = file(params.reference_fasta, type: "file", checkIfExists:true).toString()
+        params._genbank = file(params.reference_gb, type: "file", checkIfExists:true).toString()
     }
 
     Map ingress_args = [

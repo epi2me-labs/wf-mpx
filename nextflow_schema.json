@@ -31,27 +31,63 @@
                 },
                 "reference": {
                     "type": "string",
+                    "title": "Reference",
                     "description": "The reference genome to use for mapping.",
                     "help_text": "This is used if inputting a FASTQ file. We provide five MPXV reference sequences for alignment, representing clades I and II. More information can be found in our [blog post introducing this workflow](https://labs.epi2me.io/basic-mpox-workflow)",
                     "enum": [
                         "MN648051.1",
                         "MT903344.1",
-                        "ON568298.1",
+                        "NC_003310.1",
+                        "NC_063383.1",
                         "ON563414.1",
-                        "NC_003310.1"
+                        "ON568298.1"
                     ],
                     "default": "NC_003310.1"
+                },
+                "reference_fasta": {
+                    "type": "string",
+                    "format": "path",
+                    "title": "Reference",
+                    "description": "A reference genome FASTA file to use for mapping.",
+                    "help_text": "This is used if inputting a FASTQ file and when wanting to use a dfferent reference than the options provided with the workflow through the '--reference' parameter."
+                },
+                "reference_gb": {
+                    "type": "string",
+                    "format": "path",
+                    "title": "Reference",
+                    "description": "The reference genome genbank (.gb) file to use for mapping.",
+                    "help_text": "This is used if inputting a FASTQ file and when wanting to use a dfferent reference than the options provided with the workflow through the '--reference' parameter."
                 }
             },
-            "oneOf": [
+            "allOf": [
                 {
-                    "required": [
-                        "fastq"
+                    "oneOf": [
+                        {
+                            "required": ["fastq"]
+                        },
+                        {
+                            "required": ["bam"]
+                        }
                     ]
                 },
                 {
-                    "required": [
-                        "bam"
+                    "allOf": [
+                        {
+                            "if": {
+                                    "required": ["reference_fasta"]
+                            },
+                            "then": {
+                                "required": ["reference_gb"]
+                            }
+                        },
+                        {
+                            "if": {
+                                "required": ["reference_gb"]
+                            },
+                            "then": {
+                                "required": ["reference_fasta"]
+                            }
+                        }
                     ]
                 }
             ]
