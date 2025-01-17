@@ -5,6 +5,8 @@
 | bam | string | BAM file to use in the analysis. | Path to a single BAM file, or a single directory containing one or more BAM files. Multiple samples are not currently supported. |  |
 | fastq | string | FASTQ file to use in the analysis. | Path to a single FASTQ file, or a single directory containing one or more FASTQ files. Multiple samples or barcodes are not currently supported. |  |
 | reference | string | The reference genome to use for mapping. | This is used if inputting a FASTQ file. We provide five MPXV reference sequences for alignment, representing clades I and II. More information can be found in our [blog post introducing this workflow](https://labs.epi2me.io/basic-mpox-workflow) | NC_003310.1 |
+| reference_fasta | string | A reference genome FASTA file to use for mapping. | This is used if inputting a FASTQ file and when wanting to use a dfferent reference than the options provided with the workflow through the '--reference' parameter. |  |
+| reference_gb | string | The reference genome genbank (.gb) file to use for mapping. | This is used if inputting a FASTQ file and when wanting to use a dfferent reference than the options provided with the workflow through the '--reference' parameter. |  |
 
 
 ### Sample Options
