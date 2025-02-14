@@ -6,7 +6,7 @@ Recommended requirements:
 Minimum requirements:
 
 + CPUs = 4
-+ Memory = 16GB
++ Memory = 32GB
 
 Approximate run time: 45 minutes
 

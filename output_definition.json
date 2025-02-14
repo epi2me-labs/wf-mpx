@@ -1,7 +1,7 @@
 {
   "files": {
     "workflow-report": {
-      "filepath": "./wf-mpx-report.html",
+      "filepath": "wf-mpx-report.html",
       "title": "Workflow report",
       "description": "The report for the workflow",
       "mime-type": "text/html",
@@ -9,7 +9,7 @@
       "type": "aggregated"
     },
     "denovo-consensus-fasta" : {
-      "filepath": "./denovo.consensus.fasta",
+      "filepath": "denovo.consensus.fasta",
       "title": "De novo consensus assembly FASTA",
       "description": "De novo consensus assembly sequence from Flye and polished by Medaka.",
       "mime-type": "text/plain",
@@ -17,7 +17,7 @@
       "type": "per-sample"
     },
     "draft-consensus-fasta" : {
-      "filepath": "./{{ alias }}.ref.consensus.fasta",
+      "filepath": "{{ alias }}.ref.consensus.fasta",
       "title": "Reference-based consensus assembly FASTA",
       "description": "Reference-based consensus sequence from Bcftools.",
       "mime-type": "text/plain",
@@ -25,7 +25,7 @@
       "type": "per-sample"
     },
     "per-read-stats" : {
-      "filepath": "./{{ alias }}.per-read-stats.tsv.gz",
+      "filepath": "{{ alias }}.per-read-stats.tsv.gz",
       "title": "Read stats",
       "description": "A simple text file providing a summary of sequencing reads.",
       "mime-type": "application/gzip",
@@ -33,7 +33,7 @@
       "type": "per-sample"
     },
     "read-alignment" : {
-      "filepath": "./{{ alias }}.bam",
+      "filepath": "{{ alias }}.bam",
       "title": "Read alignment",
       "description": "Read alignments in BAM format.",
       "mime-type": "application/gzip",
@@ -41,7 +41,7 @@
       "type": "per-sample"
     },
     "read-alignment-index": {
-      "filepath": "./{{ alias }}.bam.bai",
+      "filepath": "{{ alias }}.bam.bai",
       "title": "Alignment index file",
       "description": "Index file of BAM file.",
       "mime-type": "application/octet-stream",
@@ -49,7 +49,7 @@
       "type": "per-sample"
     },
     "variants-file" : {
-      "filepath": "./{{ alias }}.annotate.filtered.vcf",
+      "filepath": "{{ alias }}.annotate.filtered.vcf",
       "title": "Variants file",
       "description": "Called variants in VCF format.",
       "mime-type": "text/plain",
@@ -57,7 +57,7 @@
       "type": "per-sample"
     },
     "depth-file" : {
-      "filepath": "./{{ alias }}.annotate.filtered.vcf",
+      "filepath": "{{ alias }}.annotate.filtered.vcf",
       "title": "Depth file",
       "description": "Per-base depth: overall, forward and reverse.",
       "mime-type": "text/plain",

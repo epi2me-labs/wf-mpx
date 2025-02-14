@@ -1,1 +1,1 @@
-A workflow for analysing ONT monkeypox virus (MPXV) sequences to create draft consensus or de novo assemblies.
+Mpox metagenomics assembly from nanopore sequencing data.

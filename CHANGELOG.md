@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - 'NC_063383.1' reference sequence is now available for selection.
 - Reconcile workflow with wf-template v5.3.4.
+- Increased minimum memory requirements to 32 GB to match what is requested by the assembly process.
 
 ## [v1.1.3]
 ### Fixed
