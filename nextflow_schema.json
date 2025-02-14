@@ -3,7 +3,7 @@
     "$id": "https://raw.githubusercontent.com/./master/nextflow_schema.json",
     "title": "epi2me-labs/wf-mpx",
     "workflow_title": "MPXV metagenomic assembly workflow",
-    "description": "A workflow for analysing ONT monkeypox virus (MPXV) sequences to create draft consensus or de novo assemblies.",
+    "description": "Mpox metagenomics assembly from nanopore sequencing data.",
     "demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-mpx/wf-mpx-demo.tar.gz",
     "aws_demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-mpx/wf-mpx-demo/aws.nextflow.config",
     "url": "https://github.com/epi2me-labs/wf-mpx",
@@ -258,7 +258,7 @@
         },
         "minimum": {
             "cpus": 4,
-            "memory": "16GB"
+            "memory": "32GB"
         },
         "run_time": "45 minutes",
         "arm_support": true

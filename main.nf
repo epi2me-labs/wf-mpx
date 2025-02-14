@@ -106,7 +106,7 @@ process medakaVariants {
 process makeConsensus {
     label "wfmpx"
     cpus 1
-    memory '500MB'
+    memory '1GB'
     input:
         tuple val(sample_id), val(type), path("${sample_id}.annotate.filtered.vcf")
         path reference
@@ -141,7 +141,7 @@ process flyeAssembly {
 process noAssembly{
     label "wfmpx"
     cpus 1
-    memory '10MB'
+    memory '1GB'
     input:
         tuple val(sample_id), val(type), path("${sample_id}.bam"), path("${sample_id}.bam.bai")
         path reference
@@ -183,7 +183,7 @@ process medaka_polish {
 process bamtobed {
     label "wfmpx"
     cpus 1
-    memory '500MB'
+    memory '1GB'
     input:
         tuple val(sample_id), val(type), path("medaka/denovo.consensus.fasta"), path("${sample_id}_assembly_mapped.bam")
     output:
@@ -198,7 +198,7 @@ process bamtobed {
 process getVersions {
     label "wfmpx"
     cpus 1
-    memory '500MB'
+    memory '1GB'
     output:
         path "versions.txt"
     script:
@@ -214,7 +214,7 @@ process getVersions {
 process getVersions_medaka {
     label "medaka"
     cpus 1
-    memory '500MB'
+    memory '1GB'
     input:
         path "other_versions.txt"
     output:
@@ -243,7 +243,7 @@ process getVersions_nextclade {
 process getParams {
     label "wfmpx"
     cpus 1
-    memory '500MB'
+    memory '1GB'
     output:
         path "params.json"
     script:
@@ -294,11 +294,11 @@ process makeReport {
 // See https://github.com/nextflow-io/nextflow/issues/1636
 // This is the only way to publish files from a workflow whilst
 // decoupling the publish from the process steps.
-process output {
+process publish {
     // publish inputs to output directory
     label "wfmpx"
     cpus 1
-    memory '500MB'
+    memory '1GB'
     publishDir (
         "${params.out_dir}",
         mode: 'copy',
@@ -458,7 +458,7 @@ workflow {
         pipeline.out.results
         | map { it -> [it, null] },
     )
-    | output
+    | publish
 }
 
 workflow.onComplete {
