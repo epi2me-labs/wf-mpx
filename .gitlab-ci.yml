@@ -66,3 +66,9 @@ docker-run:
         NF_WORKFLOW_OPTS: >
           -executor.\$$local.memory 32GB
           --bam test_data/ubam
+
+macos-run:
+  # Let's avoid those ARM64 runners for now
+  tags:
+    - macos
+    - x86

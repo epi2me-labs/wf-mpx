@@ -10,4 +10,4 @@ Minimum requirements:
 
 Approximate run time: 45 minutes
 
-ARM processor support: True
+ARM processor support: False
